@@ -181,7 +181,7 @@
           <div id="field-list">
             <div class="field-row">
               <div class="drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
-              <input class="field-name" placeholder="항목명" />
+              <div class="field-name" contenteditable="true" data-placeholder="항목명"></div>
               <div class="field-value" contenteditable="true" data-placeholder="내용"></div>
             </div>
           </div>
@@ -196,9 +196,9 @@
       <div class="editor-wrap">
         <div id="body-toolbar">
           <div class="toolbar-group">
-            <button class="toolbar-button" onclick="document.execCommand('bold')" title="굵게"><i class="fa-solid fa-bold"></i></button>
-            <button class="toolbar-button" onclick="document.execCommand('italic')" title="기울임"><i class="fa-solid fa-italic"></i></button>
-            <button class="toolbar-button" onclick="document.execCommand('strikethrough')" title="취소선"><i class="fa-solid fa-strikethrough"></i></button>
+            <button class="toolbar-button" onclick="bodyExec('bold')" title="굵게"><i class="fa-solid fa-bold"></i></button>
+            <button class="toolbar-button" onclick="bodyExec('italic')" title="기울임"><i class="fa-solid fa-italic"></i></button>
+            <button class="toolbar-button" onclick="bodyExec('strikethrough')" title="취소선"><i class="fa-solid fa-strikethrough"></i></button>
             <label class="toolbar-button" for="fontColorPicker" title="글자 색상"><i class="fa-solid fa-palette"></i></label>
             <input type="color" id="fontColorPicker" style="visibility:hidden;position:absolute;width:0;height:0;" />
             <label class="toolbar-button" for="bgColorPicker" title="형광펜"><i class="fa-solid fa-highlighter"></i></label>
@@ -208,16 +208,16 @@
           <div class="toolbar-divider"></div>
 
           <div class="toolbar-group">
-            <button class="toolbar-button" onclick="document.execCommand('justifyLeft')" title="왼쪽 정렬"><i class="fa-solid fa-align-left"></i></button>
-            <button class="toolbar-button" onclick="document.execCommand('justifyCenter')" title="가운데 정렬"><i class="fa-solid fa-align-center"></i></button>
-            <button class="toolbar-button" onclick="document.execCommand('justifyRight')" title="오른쪽 정렬"><i class="fa-solid fa-align-right"></i></button>
+            <button class="toolbar-button" onclick="bodyExec('justifyLeft')" title="왼쪽 정렬"><i class="fa-solid fa-align-left"></i></button>
+            <button class="toolbar-button" onclick="bodyExec('justifyCenter')" title="가운데 정렬"><i class="fa-solid fa-align-center"></i></button>
+            <button class="toolbar-button" onclick="bodyExec('justifyRight')" title="오른쪽 정렬"><i class="fa-solid fa-align-right"></i></button>
           </div>
 
           <div class="toolbar-divider"></div>
 
           <div class="toolbar-group">
-            <button class="toolbar-button" onclick="document.execCommand('insertUnorderedList')" title="글머리 기호 목록"><i class="fa-solid fa-list-ul"></i></button>
-            <button class="toolbar-button" onclick="document.execCommand('insertOrderedList')" title="번호 매기기 목록"><i class="fa-solid fa-list-ol"></i></button>
+            <button class="toolbar-button" onclick="bodyExec('insertUnorderedList')" title="글머리 기호 목록"><i class="fa-solid fa-list-ul"></i></button>
+            <button class="toolbar-button" onclick="bodyExec('insertOrderedList')" title="번호 매기기 목록"><i class="fa-solid fa-list-ol"></i></button>
           </div>
 
           <div class="toolbar-divider"></div>
