@@ -720,7 +720,7 @@ input::placeholder { color: var(--text-3); }
 .editable-h2 { font-size: 1.4em; font-weight: 700; }
 .editable-h3 { font-size: 1.2em; font-weight: 700; }
 
-.editable-text { font-size: 0.95em; line-height: 1.7; }
+.editable-text { font-size: var(--wiki-font-size); line-height: 1.7; }
 
 .editable-quote {
   border-left: 4px solid var(--primary);
