@@ -340,6 +340,8 @@ let rawHTML = `
     line-height: var(--wiki-line-height);
     max-width: var(--wiki-max-width);
     margin: 0 auto;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 #wikiwrap a,
@@ -363,6 +365,8 @@ let rawHTML = `
     text-decoration: none !important;
     cursor: pointer;
     font-size: var(--wiki-font-size) !important;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 .wiki-main-table {
@@ -446,14 +450,15 @@ details[open] .wiki-h3-icon ion-icon {
     line-height: var(--wiki-line-height);
 }
 
-.text1 ul,
-.text1 ol {
-    padding-left: 1.4em;
-    margin: 0.4em 0;
+#wikiwrap ul,
+#wikiwrap ol {
+    padding-left: 1.4em !important;
+    margin: 0.4em 0 !important;
+    list-style-position: outside !important;
 }
 
-.text1 li {
-    margin: 0.2em 0;
+#wikiwrap li {
+    margin: 0.2em 0 !important;
 }
 
 .wiki-category {
@@ -1495,7 +1500,7 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
             <span class="tbl-sep"></span>
             <label class="tbl-color-label" title="표 너비 (데스크탑 기준 %, 모바일에서는 항상 100%)">
                 <i class="fa-solid fa-arrows-left-right"></i>
-                <input type="number" class="tbl-width-input" min="10" max="100" step="1" value="${tblWidthPercent}" oninput="tableSetWidthPercent(this)">%
+                <input type="number" class="tbl-width-input" min="10" max="100" step="1" value="${tblWidthPercent}" onchange="tableSetWidthPercent(this)">%
             </label>
             <span class="tbl-cell-info"></span>
         </div>
@@ -1647,8 +1652,12 @@ function generateSingleBlockHTML(block) {
     const type = block.dataset.type;
     switch (type) {
         case 'text': {
+            // A <ul>/<ol> from the list toolbar button can't legally live
+            // inside a <p>; the browser would silently split the <p> and
+            // eject the list (and strip .text1 from anything after it).
+            // <div> has no such restriction.
             const content = block.querySelector('.editable-text')?.innerHTML || '';
-            return `<p class="text1">${content}</p>\n`;
+            return `<div class="text1">${content}</div>\n`;
         }
         case 'quote': {
             const quoteContent = block.querySelector('.quote-content')?.innerHTML || '';
