@@ -40,9 +40,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
     document.getElementById('input-section').addEventListener('input', debouncedGenerateHTML);
 
     document.body.addEventListener('focusin', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.target.id !== 'bodyFontSizeInput') {
             lastFocusedInput = e.target;
-            savedRange = null; 
+            savedRange = null;
         }
     });
 });
@@ -280,8 +280,9 @@ function generateHTML() {
   
 let rawHTML = `
 <style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp.min.css");
 :root {
-    --wiki-main-color: ${color}; 
+    --wiki-main-color: ${color};
     --wiki-text-color: #ffffff;
     --wiki-link-color: #0275d8;
     --wiki-border-color: #ddd;
@@ -571,6 +572,16 @@ details[open] .wiki-h3-icon ion-icon {
     line-height: 0;
 }
 
+.wiki-table-scaled {
+    width: var(--table-width-pct, 100%);
+}
+
+@media (max-width: 767px) {
+    .wiki-table-scaled {
+        width: 100% !important;
+    }
+}
+
 .wiki-img-sing td {
     padding: 0;
     border: 2px solid var(--wiki-main-color);
@@ -830,6 +841,7 @@ function initializeBodyEditor() {
             if(editorContainer.contains(range.commonAncestorContainer)) {
                 savedRange = range.cloneRange();
                 lastFocusedInput = null;
+                updateFontSizeInputDisplay(range, 'body');
             }
         }
     };
@@ -916,6 +928,7 @@ function initializeBasicToolbar() {
         const range = sel.getRangeAt(0);
         if (fieldList && fieldList.contains(range.commonAncestorContainer)) {
             basicSavedRange = range.cloneRange();
+            updateFontSizeInputDisplay(range, 'basic');
         }
     });
 
@@ -977,6 +990,16 @@ function basicExec(cmd) {
 }
 
 // ── 글씨 크기 조절 (기본 정보 / 본문 공통) ──────────
+function updateFontSizeInputDisplay(range, scope) {
+    const input = document.getElementById(scope === 'basic' ? 'basicFontSizeInput' : 'bodyFontSizeInput');
+    if (!input) return;
+    let node = range.startContainer;
+    if (node.nodeType !== Node.ELEMENT_NODE) node = node.parentElement;
+    if (!node) return;
+    const size = parseFloat(window.getComputedStyle(node).fontSize);
+    input.value = isNaN(size) ? '' : Math.round(size);
+}
+
 function changeFontSize(delta, scope) {
     const isBasic = scope === 'basic';
     const rangeRef = isBasic ? basicSavedRange : savedRange;
@@ -986,34 +1009,67 @@ function changeFontSize(delta, scope) {
         return;
     }
 
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(rangeRef);
-
     let refNode = rangeRef.startContainer;
     if (refNode.nodeType !== Node.ELEMENT_NODE) refNode = refNode.parentElement;
     const currentSize = refNode ? parseFloat(window.getComputedStyle(refNode).fontSize) : NaN;
     const newSize = Math.max(8, (isNaN(currentSize) ? 14 : currentSize) + delta);
 
+    applyFontSizeToSelection(newSize, scope, rangeRef);
+}
+
+function setFontSizeExact(inputEl, scope) {
+    const isBasic = scope === 'basic';
+    const rangeRef = isBasic ? basicSavedRange : savedRange;
+
+    if (!rangeRef || rangeRef.collapsed) {
+        alert('글씨 크기를 조절할 텍스트를 먼저 선택(드래그)해주세요.');
+        inputEl.value = '';
+        return;
+    }
+
+    const newSize = Math.max(8, parseFloat(inputEl.value) || 14);
+    applyFontSizeToSelection(newSize, scope, rangeRef);
+}
+
+function applyFontSizeToSelection(newSize, scope, rangeRef) {
+    const isBasic = scope === 'basic';
+
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(rangeRef);
+
     document.execCommand('styleWithCSS', false, false);
     document.execCommand('fontSize', false, '7');
 
     const scopeEl = isBasic ? document.getElementById('field-list') : document.getElementById('editor-container');
+    const newSpans = [];
     if (scopeEl) {
         scopeEl.querySelectorAll('font[size="7"]').forEach(f => {
             const span = document.createElement('span');
             span.style.fontSize = newSize + 'px';
             while (f.firstChild) span.appendChild(f.firstChild);
             f.replaceWith(span);
+            newSpans.push(span);
         });
     }
 
-    if (selection.rangeCount > 0) {
-        const newRange = selection.getRangeAt(0).cloneRange();
+    // Re-select the resized text (boundaries INSIDE the spans, not around
+    // them) so repeated clicks and the size input keep working on the same
+    // selection without re-dragging. A range anchored at the parent level
+    // (setStartBefore/After) looks selected visually but execCommand treats
+    // it as nothing-to-rewrap on the next call, silently no-op'ing.
+    if (newSpans.length > 0) {
+        const firstSpan = newSpans[0];
+        const lastSpan = newSpans[newSpans.length - 1];
+        const newRange = document.createRange();
+        newRange.setStart(firstSpan, 0);
+        newRange.setEnd(lastSpan, lastSpan.childNodes.length);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
         if (isBasic) {
-            basicSavedRange = newRange;
+            basicSavedRange = newRange.cloneRange();
         } else {
-            savedRange = newRange;
+            savedRange = newRange.cloneRange();
         }
     }
     debouncedGenerateHTML();
@@ -1185,7 +1241,15 @@ function updateMediaBorderColor(colorInput) {
     });
 }
 
-function addBlock(type, data = {}, targetContainer = null) {
+function resolveContainerChildBlock(startEl, container) {
+    let node = startEl;
+    while (node && node.parentElement && node.parentElement !== container) {
+        node = node.parentElement;
+    }
+    return (node && node.parentElement === container) ? node : null;
+}
+
+function addBlock(type, data = {}, targetContainer = null, forceAppend = false) {
     const container = targetContainer || document.getElementById("editor-container");
     const block = document.createElement("div");
     block.className = "editable-block";
@@ -1376,6 +1440,7 @@ function addBlock(type, data = {}, targetContainer = null) {
             const tblBorderColor = data.borderColor || '#cccccc';
             const tblOutBorderColor = data.outBorderColor || tblBorderColor;
             const tblBgColor = data.bgColor || '#ffffff';
+            const tblWidthPercent = data.widthPercent || 100;
             let cellsHTML = '';
             for (let r = 0; r < rows; r++) {
                 cellsHTML += '<tr>';
@@ -1427,10 +1492,15 @@ function addBlock(type, data = {}, targetContainer = null) {
             <button class="tbl-btn" onclick="tableInsertImage(this)" title="셀에 이미지 추가"><i class="fa-solid fa-image"></i></button>
             <button class="tbl-btn" onclick="tableInsertYoutube(this)" title="셀에 유튜브 추가"><i class="fa-brands fa-youtube"></i></button>
             <button class="tbl-btn" onclick="tableInsertToggle(this)" title="셀에 토글 블록 추가"><i class="fa-solid fa-chevron-right"></i></button>
+            <span class="tbl-sep"></span>
+            <label class="tbl-color-label" title="표 너비 (데스크탑 기준 %, 모바일에서는 항상 100%)">
+                <i class="fa-solid fa-arrows-left-right"></i>
+                <input type="number" class="tbl-width-input" min="10" max="100" step="1" value="${tblWidthPercent}" oninput="tableSetWidthPercent(this)">%
+            </label>
             <span class="tbl-cell-info"></span>
         </div>
         <div class="table-scroll-wrap">
-            <table class="editable-table" data-border-color="${tblBorderColor}" data-bg-color="${tblBgColor}" data-out-border-color="${tblOutBorderColor}" style="border-collapse:collapse;width:100%;border:2px solid ${tblOutBorderColor};">
+            <table class="editable-table" data-border-color="${tblBorderColor}" data-bg-color="${tblBgColor}" data-out-border-color="${tblOutBorderColor}" data-width-pct="${tblWidthPercent}" style="border-collapse:collapse;width:100%;border:2px solid ${tblOutBorderColor};">
                 <tbody>${cellsHTML}</tbody>
             </table>
         </div>
@@ -1442,18 +1512,20 @@ function addBlock(type, data = {}, targetContainer = null) {
 
     block.innerHTML = contentHTML + `<button class="delete-block-btn" onclick="this.parentElement.remove(); debouncedGenerateHTML();"><i class="fa-solid fa-xmark"></i></button>`;
     
-    const focusedElement = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.editable-block') : null;
-    const referenceBlock = (focusedElement && container.contains(focusedElement))
-        ? focusedElement
-        : ((lastSelectedBlock && container.contains(lastSelectedBlock)) ? lastSelectedBlock : null);
+    let referenceBlock = null;
+    if (!forceAppend) {
+        const focusedElement = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.editable-block') : null;
+        referenceBlock = (focusedElement && resolveContainerChildBlock(focusedElement, container))
+            || (lastSelectedBlock && resolveContainerChildBlock(lastSelectedBlock, container))
+            || null;
+    }
 
-    if (!targetContainer && referenceBlock) {
+    if (referenceBlock) {
         referenceBlock.after(block);
-        lastSelectedBlock = block;
     } else {
         container.appendChild(block);
-        if (!targetContainer) lastSelectedBlock = block;
     }
+    if (!targetContainer) lastSelectedBlock = block;
     
     const editableContent = block.querySelector('[contenteditable="true"]');
     if(editableContent) {
@@ -1561,10 +1633,10 @@ function addBlock(type, data = {}, targetContainer = null) {
         }
         if (data.nestedBlocks && data.nestedBlocks.length > 0) {
             const nestedContainer = block.querySelector('.toggle-blocks-container');
-            data.nestedBlocks.forEach(nb => addBlock(nb.type, nb, nestedContainer));
+            data.nestedBlocks.forEach(nb => addBlock(nb.type, nb, nestedContainer, true));
         } else if (data.content) {
             const nestedContainer = block.querySelector('.toggle-blocks-container');
-            addBlock('text', { content: data.content }, nestedContainer);
+            addBlock('text', { content: data.content }, nestedContainer, true);
         }
     }
 
@@ -1645,8 +1717,9 @@ function generateSingleBlockHTML(block) {
             const tbl = block.querySelector('.editable-table');
             if (!tbl) return '';
             const outBorderColor = tbl.dataset.outBorderColor || tbl.dataset.borderColor || '#cccccc';
+            const widthPct = parseInt(tbl.dataset.widthPct) || 100;
             const rows = tbl.querySelectorAll('tr');
-            let tableHTML = `<table style="border-collapse:collapse;width:100%;margin:1em 0; border: 2px solid ${outBorderColor};">`;
+            let tableHTML = `<table class="wiki-table-scaled" style="--table-width-pct: ${widthPct}%; border-collapse:collapse;margin:1em 0; border: 2px solid ${outBorderColor};">`;
             rows.forEach(row => {
                 tableHTML += '<tr>';
                 row.querySelectorAll('td, th').forEach(cell => {
@@ -1749,12 +1822,12 @@ function generateIndexHTML() {
         <table class="wiki-index">
         <tbody>
         <tr style="padding: 0 20px;">
-        <td style="width: 100%; margin-left: 5px; padding: 12px 20px 18px 20px; font-size: .95rem; line-height: 1.5; position: relative;">
-        <div onclick="(function(header){var body=header.closest('td').querySelector('.wiki-index-body');var btn=header.querySelector('button');var isOpen=body.style.display!=='none';body.style.display=isOpen?'none':'block';if(btn)btn.style.transform=isOpen?'rotate(90deg)':'rotate(0deg)';})(this)" style="display: flex; align-items: center; justify-content: space-between; margin-left: -5px; margin-bottom: 4px; cursor: pointer;" title="접기/펼치기">
+        <td style="width: 100%; margin-left: 5px; padding: 12px 20px 18px 20px; line-height: 1.5; position: relative;">
+        <div onclick="(function(header){var body=header.closest('td').querySelector('.wiki-index-body');var btn=header.querySelector('button');var isOpen=body.style.display!=='none';body.style.display=isOpen?'none':'block';if(btn)btn.style.transform=isOpen?'rotate(90deg)':'rotate(0deg)';})(this)" style="display: flex; align-items: center; justify-content: space-between; margin-left: -5px; margin-bottom: 4px; cursor: pointer; font-size: .95rem;" title="접기/펼치기">
         <div><a name="목차"></a><span style="font-size: 1.25em;">목차</span></div>
         <button style="background:none;border:none;cursor:pointer;padding:2px 4px;color:#555;transition:transform 0.25s ease;display:flex;align-items:center;"><ion-icon name="chevron-down-outline" style="font-size:1.4em;"></ion-icon></button>
         </div>
-        <div class="wiki-index-body">
+        <div class="wiki-index-body" style="font-size: var(--wiki-font-size);">
         ${indexContent}
         </div>
         </td></tr></tbody></table>`;
@@ -1788,7 +1861,7 @@ function tableUpdateInfo(wrap) {
 }
 
 function tableAddRow(btn) {
-    const { table } = tableGetSelectedCells(btn);
+    const { table, selected } = tableGetSelectedCells(btn);
     const tbody = table.querySelector('tbody');
     const rows = tbody.querySelectorAll('tr');
     if (rows.length === 0) return;
@@ -1807,16 +1880,29 @@ function tableAddRow(btn) {
         td.style.wordBreak = 'break-word';
         newRow.appendChild(td);
     }
-    tbody.appendChild(newRow);
+    const targetRow = selected.length > 0 ? selected[selected.length - 1].closest('tr') : null;
+    if (targetRow) {
+        targetRow.after(newRow);
+    } else {
+        tbody.appendChild(newRow);
+    }
     debouncedGenerateHTML();
 }
 
 function tableAddCol(btn) {
-    const { table } = tableGetSelectedCells(btn);
+    const { table, selected } = tableGetSelectedCells(btn);
     const tbody = table.querySelector('tbody');
     const rows = tbody.querySelectorAll('tr');
     const borderColor = table.dataset.borderColor || '#cccccc';
     const bgColor = table.dataset.bgColor || '#ffffff';
+
+    let targetColIndex = -1;
+    if (selected.length > 0) {
+        const refCell = selected[selected.length - 1];
+        const cellsInRefRow = Array.from(refCell.closest('tr').querySelectorAll('td, th'));
+        targetColIndex = cellsInRefRow.indexOf(refCell);
+    }
+
     rows.forEach(row => {
         const td = document.createElement('td');
         td.setAttribute('contenteditable', 'true');
@@ -1826,7 +1912,14 @@ function tableAddCol(btn) {
         td.style.minWidth = '60px';
         td.style.verticalAlign = 'top';
         td.style.wordBreak = 'break-word';
-        row.appendChild(td);
+
+        const cellsInRow = Array.from(row.querySelectorAll('td, th'));
+        const refCellInRow = targetColIndex >= 0 ? cellsInRow[targetColIndex] : null;
+        if (refCellInRow) {
+            refCellInRow.after(td);
+        } else {
+            row.appendChild(td);
+        }
     });
     debouncedGenerateHTML();
 }
@@ -2005,6 +2098,17 @@ function tableOuterBorder(input) {
     const table = wrap.querySelector('.editable-table');
     table.style.border = `2px solid ${input.value}`;
     table.dataset.outBorderColor = input.value;
+    debouncedGenerateHTML();
+}
+
+function tableSetWidthPercent(input) {
+    const wrap = input.closest('.editable-table-wrap');
+    const table = wrap.querySelector('.editable-table');
+    let pct = parseInt(input.value);
+    if (isNaN(pct)) pct = 100;
+    pct = Math.min(100, Math.max(10, pct));
+    input.value = pct;
+    table.dataset.widthPct = pct;
     debouncedGenerateHTML();
 }
 
@@ -2218,6 +2322,64 @@ function initTableBlock(block) {
     setupTableResizer(table);
 }
 
+// Serializes a table's actual DOM cells into a full logical rows x cols grid,
+// with {hidden:true} placeholders at positions covered by an earlier cell's
+// rowspan/colspan. A flat "one entry per actual <td>" list breaks as soon as
+// any cell is merged, since a merged row has fewer real <td>s than the
+// table's true column count - loading that back would silently drop columns.
+function serializeTableForSave(tbl) {
+    const borderColor = tbl.dataset.borderColor || '#cccccc';
+    const outBorderColor = tbl.dataset.outBorderColor || borderColor;
+    const bgColor = tbl.dataset.bgColor || '#ffffff';
+    const widthPercent = parseInt(tbl.dataset.widthPct) || 100;
+
+    const rowEls = Array.from(tbl.querySelectorAll('tr'));
+    const grid = [];
+    const rowspanTracker = {};
+
+    rowEls.forEach((row, r) => {
+        grid[r] = [];
+        const cellsInRow = Array.from(row.querySelectorAll('td, th'));
+        let c = 0, cellIdx = 0;
+        while (cellIdx < cellsInRow.length || rowspanTracker[c] > 0) {
+            if (rowspanTracker[c] > 0) {
+                grid[r][c] = { hidden: true };
+                rowspanTracker[c]--;
+                c++;
+                continue;
+            }
+            const cell = cellsInRow[cellIdx];
+            if (!cell) break;
+            const rowspan = parseInt(cell.getAttribute('rowspan')) || 1;
+            const colspan = parseInt(cell.getAttribute('colspan')) || 1;
+            grid[r][c] = {
+                content: cell.innerHTML,
+                bg: cell.style.backgroundColor || bgColor,
+                border: cell.style.borderColor || borderColor,
+                rowspan,
+                colspan,
+                isHeader: cell.tagName === 'TH',
+                width: cell.style.width || '',
+                height: cell.style.height || ''
+            };
+            for (let cc = 1; cc < colspan; cc++) {
+                grid[r][c + cc] = { hidden: true };
+            }
+            if (rowspan > 1) {
+                for (let cc = 0; cc < colspan; cc++) {
+                    rowspanTracker[c + cc] = (rowspanTracker[c + cc] || 0) + (rowspan - 1);
+                }
+            }
+            c += colspan;
+            cellIdx++;
+        }
+    });
+
+    const cols = grid.reduce((max, row) => Math.max(max, row.length), 0) || 1;
+
+    return { borderColor, outBorderColor, bgColor, widthPercent, cells: grid, rows: grid.length, cols };
+}
+
 function saveData() {
   const data = {
     mainColor: document.getElementById("mainColorPicker").value,
@@ -2262,8 +2424,8 @@ function saveData() {
             case 'warn':
                 break;
             case 'toggle': {
-                item.openLabel = block.querySelector('.toggle-open-label')?.value || '';
-                item.closeLabel = block.querySelector('.toggle-close-label')?.value || '';
+                item.openLabel = block.querySelector('.toggle-open-label')?.innerHTML.trim() || '';
+                item.closeLabel = block.querySelector('.toggle-close-label')?.innerHTML.trim() || '';
                 item.btnColor = block.querySelector('.toggle-btn-color')?.value || '#000000';
                 const nestedContainer = block.querySelector('.toggle-blocks-container');
                 item.nestedBlocks = [];
@@ -2296,29 +2458,7 @@ function saveData() {
                             case 'table': {
                                 const tbl = nb.querySelector('.editable-table');
                                 if (tbl) {
-                                    nbItem.borderColor = tbl.dataset.borderColor || '#cccccc';
-                                    nbItem.outBorderColor = tbl.dataset.outBorderColor || nbItem.borderColor;
-                                    nbItem.bgColor = tbl.dataset.bgColor || '#ffffff';
-                                    const tblRows = tbl.querySelectorAll('tr');
-                                    nbItem.cells = [];
-                                    tblRows.forEach(row => {
-                                        const rowData = [];
-                                        row.querySelectorAll('td, th').forEach(cell => {
-                                            rowData.push({
-                                                content: cell.innerHTML,
-                                                bg: cell.style.backgroundColor || nbItem.bgColor,
-                                                border: cell.style.borderColor || nbItem.borderColor,
-                                                rowspan: parseInt(cell.getAttribute('rowspan')) || 1,
-                                                colspan: parseInt(cell.getAttribute('colspan')) || 1,
-                                                isHeader: cell.tagName === 'TH',
-                                                width: cell.style.width || '',
-                                                height: cell.style.height || ''
-                                            });
-                                        });
-                                        nbItem.cells.push(rowData);
-                                    });
-                                    nbItem.rows = nbItem.cells.length;
-                                    nbItem.cols = nbItem.cells[0] ? nbItem.cells[0].length : 3;
+                                    Object.assign(nbItem, serializeTableForSave(tbl));
                                 }
                                 break;
                             }
@@ -2341,29 +2481,7 @@ function saveData() {
             case 'table': {
                 const tbl = block.querySelector('.editable-table');
                 if (tbl) {
-                    item.borderColor = tbl.dataset.borderColor || '#cccccc';
-                    item.outBorderColor = tbl.dataset.outBorderColor || item.borderColor;
-                    item.bgColor = tbl.dataset.bgColor || '#ffffff';
-                    const rows = tbl.querySelectorAll('tr');
-                    item.cells = [];
-                    rows.forEach(row => {
-                        const rowData = [];
-                        row.querySelectorAll('td, th').forEach(cell => {
-                            rowData.push({
-                                content: cell.innerHTML,
-                                bg: cell.style.backgroundColor || item.bgColor,
-                                border: cell.style.borderColor || item.borderColor,
-                                rowspan: parseInt(cell.getAttribute('rowspan')) || 1,
-                                colspan: parseInt(cell.getAttribute('colspan')) || 1,
-                                isHeader: cell.tagName === 'TH',
-                                width: cell.style.width || '',
-                                height: cell.style.height || ''
-                            });
-                        });
-                        item.cells.push(rowData);
-                    });
-                    item.rows = item.cells.length;
-                    item.cols = item.cells[0] ? item.cells[0].length : 3;
+                    Object.assign(item, serializeTableForSave(tbl));
                 }
                 break;
             }
@@ -2441,7 +2559,7 @@ function loadData(event) {
     editorContainer.innerHTML = "";
     if (data.bodyContent && data.bodyContent.length > 0) {
         data.bodyContent.forEach(item => {
-            addBlock(item.type, item);
+            addBlock(item.type, item, null, true);
         });
     }
 
