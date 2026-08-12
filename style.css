@@ -1278,7 +1278,7 @@ button {
   padding: 5px 10px;
   border: 1px solid var(--wiki-border-color);
   text-align: center;
-  color: #000;
+  color: inherit !important;
 }
 
 .wt-color {
@@ -1294,7 +1294,7 @@ button {
   padding: 5px 10px;
   border: 1px solid var(--wiki-border-color);
   text-align: left;
-  color: #000;
+  color: inherit !important;
 }
 
 .wiki-main-table tr:last-child > td { border-bottom: none; }
