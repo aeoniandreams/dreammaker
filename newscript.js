@@ -1,3 +1,4 @@
+// WIKIMAKER_BUILD: 2026-08-12-15 (column width w/ merged rows fix)
 const debouncedGenerateHTML = (function() {
     let timeout;
     return function() {
@@ -455,10 +456,25 @@ details[open] .wiki-h3-icon ion-icon {
     padding-left: 1.4em !important;
     margin: 0.4em 0 !important;
     list-style-position: outside !important;
+    color: inherit !important;
+}
+
+#wikiwrap ul {
+    list-style-type: disc !important;
+}
+
+#wikiwrap ol {
+    list-style-type: decimal !important;
 }
 
 #wikiwrap li {
     margin: 0.2em 0 !important;
+    color: inherit !important;
+}
+
+#wikiwrap ul li::marker,
+#wikiwrap ol li::marker {
+    color: inherit !important;
 }
 
 .wiki-category {
@@ -1448,6 +1464,12 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
             const tblOutBorderColor = data.outBorderColor || tblBorderColor;
             const tblBgColor = data.bgColor || '#ffffff';
             const tblWidthPercent = data.widthPercent || 100;
+            const tblColWidths = data.colWidths || [];
+            let colgroupHTML = '<colgroup>';
+            for (let c = 0; c < cols; c++) {
+                colgroupHTML += tblColWidths[c] ? `<col style="width:${tblColWidths[c]};">` : '<col>';
+            }
+            colgroupHTML += '</colgroup>';
             let cellsHTML = '';
             for (let r = 0; r < rows; r++) {
                 cellsHTML += '<tr>';
@@ -1514,6 +1536,7 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
         </div>
         <div class="table-scroll-wrap">
             <table class="editable-table" data-border-color="${tblBorderColor}" data-bg-color="${tblBgColor}" data-out-border-color="${tblOutBorderColor}" data-width-pct="${tblWidthPercent}" style="border-collapse:collapse;width:100%;border:2px solid ${tblOutBorderColor};">
+                ${colgroupHTML}
                 <tbody>${cellsHTML}</tbody>
             </table>
         </div>
@@ -1768,6 +1791,14 @@ function generateSingleBlockHTML(block) {
             const widthPct = parseInt(tbl.dataset.widthPct) || 100;
             const rows = tbl.querySelectorAll('tr');
             let tableHTML = `<table class="wiki-table-scaled" style="--table-width-pct: ${widthPct}%; border-collapse:collapse;table-layout:fixed;margin:1em 0; border: 2px solid ${outBorderColor};">`;
+            const colgroupEl = tbl.querySelector('colgroup');
+            if (colgroupEl) {
+                tableHTML += '<colgroup>';
+                Array.from(colgroupEl.children).forEach(col => {
+                    tableHTML += col.style.width ? `<col style="width:${col.style.width};">` : '<col>';
+                });
+                tableHTML += '</colgroup>';
+            }
             rows.forEach(row => {
                 tableHTML += '<tr>';
                 row.querySelectorAll('td, th').forEach(cell => {
@@ -1965,6 +1996,17 @@ function tableAddCol(btn) {
             row.appendChild(td);
         }
     });
+
+    const colgroup = table.querySelector('colgroup');
+    if (colgroup) {
+        const newCol = document.createElement('col');
+        const refCol = targetColIndex >= 0 ? colgroup.children[targetColIndex] : null;
+        if (refCol) {
+            refCol.after(newCol);
+        } else {
+            colgroup.appendChild(newCol);
+        }
+    }
     debouncedGenerateHTML();
 }
 
@@ -1993,17 +2035,20 @@ function tableDelCol(btn) {
         const cells = Array.from(row.querySelectorAll('td, th'));
         colsToDelete.add(cells.indexOf(cell));
     });
+    const colgroup = table.querySelector('colgroup');
     if (colsToDelete.size === 0) {
         rows.forEach(row => {
             const cells = row.querySelectorAll('td, th');
             if (cells.length > 1) cells[cells.length - 1].remove();
         });
+        if (colgroup && colgroup.lastElementChild) colgroup.lastElementChild.remove();
     } else {
         colsToDelete.forEach(colIdx => {
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td, th');
                 if (cells[colIdx]) cells[colIdx].remove();
             });
+            if (colgroup && colgroup.children[colIdx]) colgroup.children[colIdx].remove();
         });
     }
     debouncedGenerateHTML();
@@ -2156,6 +2201,41 @@ function tableSetWidthPercent(input) {
     debouncedGenerateHTML();
 }
 
+// Maps every real cell in the table to its logical column, accounting for
+// colspan/rowspan (same walk as serializeTableForSave). A raw "Nth cell in
+// this row" index breaks the moment any other row has a different real cell
+// count - e.g. a colspan=2 image row above a normal 2-column row - so column
+// width/lookup needs to go through logical columns instead.
+function buildTableCellGrid(table) {
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const rowspanTracker = {};
+    return rows.map(row => {
+        const cellsInRow = Array.from(row.querySelectorAll('td, th'));
+        let c = 0, cellIdx = 0;
+        const entries = [];
+        while (cellIdx < cellsInRow.length || rowspanTracker[c] > 0) {
+            if (rowspanTracker[c] > 0) {
+                rowspanTracker[c]--;
+                c++;
+                continue;
+            }
+            const cell = cellsInRow[cellIdx];
+            if (!cell) break;
+            const rowspan = parseInt(cell.getAttribute('rowspan')) || 1;
+            const colspan = parseInt(cell.getAttribute('colspan')) || 1;
+            entries.push({ cell, logicalCol: c, colspan });
+            if (rowspan > 1) {
+                for (let cc = 0; cc < colspan; cc++) {
+                    rowspanTracker[c + cc] = (rowspanTracker[c + cc] || 0) + (rowspan - 1);
+                }
+            }
+            c += colspan;
+            cellIdx++;
+        }
+        return entries;
+    });
+}
+
 function tableSetColumnWidth(input) {
     const wrap = input.closest('.editable-table-wrap');
     const table = wrap.querySelector('.editable-table');
@@ -2175,15 +2255,29 @@ function tableSetColumnWidth(input) {
     input.value = pct;
 
     const refCell = selected[selected.length - 1];
-    const refRow = refCell.closest('tr');
-    const cellsInRefRow = Array.from(refRow.querySelectorAll('td, th'));
-    const colIndex = cellsInRefRow.indexOf(refCell);
+    const grid = buildTableCellGrid(table);
 
-    table.querySelectorAll('tr').forEach(row => {
-        const cells = Array.from(row.querySelectorAll('td, th'));
-        const cell = cells[colIndex];
-        if (cell) cell.style.width = pct + '%';
-    });
+    let targetLogicalCol = null;
+    for (const row of grid) {
+        const entry = row.find(e => e.cell === refCell);
+        if (entry) { targetLogicalCol = entry.logicalCol; break; }
+    }
+    if (targetLogicalCol === null) return;
+
+    // table-layout:fixed only reads column widths from <col> elements (or the
+    // FIRST row's cells) - a merged cell in an earlier row (e.g. an image
+    // spanning both columns) makes any width set on a later row's cells get
+    // silently ignored by the browser. A <colgroup> controls column width
+    // independent of which row has merges, so that's the only reliable way.
+    let colgroup = table.querySelector('colgroup');
+    if (!colgroup) {
+        colgroup = document.createElement('colgroup');
+        table.insertBefore(colgroup, table.firstChild);
+    }
+    while (colgroup.children.length <= targetLogicalCol) {
+        colgroup.appendChild(document.createElement('col'));
+    }
+    colgroup.children[targetLogicalCol].style.width = pct + '%';
     debouncedGenerateHTML();
 }
 
@@ -2452,7 +2546,10 @@ function serializeTableForSave(tbl) {
 
     const cols = grid.reduce((max, row) => Math.max(max, row.length), 0) || 1;
 
-    return { borderColor, outBorderColor, bgColor, widthPercent, cells: grid, rows: grid.length, cols };
+    const colgroup = tbl.querySelector('colgroup');
+    const colWidths = colgroup ? Array.from(colgroup.children).map(col => col.style.width || '') : [];
+
+    return { borderColor, outBorderColor, bgColor, widthPercent, colWidths, cells: grid, rows: grid.length, cols };
 }
 
 function saveData() {
