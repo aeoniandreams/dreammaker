@@ -1119,7 +1119,7 @@ function basicAddToggle() {
     const content = prompt("토글 안에 들어갈 내용을 입력하세요:", ""); 
     if (content === null) return;
 
-    const toggleHtml = `<span class="wiki-toggle-wrap"><a class="wiki-toggle-btn" href="javascript:void(0)" onclick="(function(btn){var w=btn.closest('.wiki-toggle-wrap'); var b=w.querySelector('.wiki-toggle-body'); var isOpen=b.style.display!=='none'; b.style.display=isOpen?'none':'block'; btn.innerHTML=isOpen?btn.dataset.openLabel:btn.dataset.closeLabel;})(this)" data-open-label="${openLabel.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" data-close-label="${closeLabel.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" style="color: inherit; text-decoration: none; cursor: pointer;">${openLabel}</a><div class="wiki-toggle-body" style="display:none; padding-top:4px;">${content}</div></span>`;
+    const toggleHtml = `<span class="wiki-toggle-wrap"><a class="wiki-toggle-btn" href="javascript:void(0)" onclick="(function(btn){var w=btn.closest('.wiki-toggle-wrap'); var b=w.querySelector('.wiki-toggle-body'); var isOpen=b.style.display!=='none'; b.style.display=isOpen?'none':'block'; btn.innerHTML=isOpen?btn.dataset.openLabel:btn.dataset.closeLabel;})(this)" data-open-label="${openLabel.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" data-close-label="${closeLabel.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" style="color: inherit; text-decoration: none; cursor: pointer; font-size: var(--wiki-font-size, 14px); -webkit-text-size-adjust: 100%; text-size-adjust: 100%;">${openLabel}</a><div class="wiki-toggle-body" style="display:none; padding-top:4px;">${content}</div></span>`;
 
     if (basicSavedRange) restoreBasicRange();
     document.execCommand('insertHTML', false, toggleHtml);
@@ -1317,6 +1317,7 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
             const toggleOpenLabel = data.openLabel || '더보기';
             const toggleCloseLabel = data.closeLabel || '닫기';
             const toggleBtnColor = data.btnColor || '#000000';
+            const toggleBtnColorCustom = !!data.btnColorCustom;
             contentHTML = `
                 <div class="block-drag-handle" title="드래그하여 이동"><i class="fa-solid fa-grip-vertical"></i></div><div class="editable-toggle">
                     <div class="toggle-label-row">
@@ -1325,10 +1326,11 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
                         <span class="toggle-label-hint">닫힐 때:</span>
                         <span class="toggle-close-label" contenteditable="true" style="display: inline-block; min-width: 80px; padding: 3px 6px; font-size: 0.82rem; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); cursor: text;">${toggleCloseLabel}</span>
                         <span class="toggle-label-hint">버튼 색:</span>
-                        <label class="tbl-color-label toggle-btn-color-label" title="버튼 텍스트 색상" style="padding:3px 6px;">
-                            <div class="toggle-btn-color-display" style="width:14px;height:14px;border-radius:50%;background:${toggleBtnColor};border:1px solid rgba(0,0,0,0.2);flex-shrink:0;"></div>
-                            <input type="color" class="toggle-btn-color" value="${toggleBtnColor}" style="width:0;height:0;opacity:0;position:absolute;">
+                        <label class="tbl-color-label toggle-btn-color-label" title="버튼 텍스트 색상 (지정하지 않으면 티스토리 스킨 기본 글자색을 따릅니다)" style="padding:3px 6px;">
+                            <div class="toggle-btn-color-display" style="width:14px;height:14px;border-radius:50%;background:${toggleBtnColorCustom ? toggleBtnColor : 'transparent'};border:1px ${toggleBtnColorCustom ? 'solid' : 'dashed'} rgba(0,0,0,0.35);flex-shrink:0;"></div>
+                            <input type="color" class="toggle-btn-color" value="${toggleBtnColor}" data-custom="${toggleBtnColorCustom}" style="width:0;height:0;opacity:0;position:absolute;">
                         </label>
+                        ${toggleBtnColorCustom ? `<button type="button" class="tbl-transparent-btn toggle-btn-color-reset" title="버튼 색을 스킨 기본색으로 되돌리기">↺</button>` : ''}
                     </div>
                     <div class="toggle-mini-toolbar">
                         <span class="toggle-label-hint" style="font-size:0.7rem;">블록 추가:</span>
@@ -1453,17 +1455,18 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
                     const cellData = (data.cells && data.cells[r] && data.cells[r][c]) || {};
                     const rowspan = cellData.rowspan || 1;
                     const colspan = cellData.colspan || 1;
-                    const cellBg = cellData.bg || tblBgColor;
+                    const cellBg = cellData.bg || '';
                     const cellBorder = cellData.border || tblBorderColor;
                     const cellContent = cellData.content || '';
                     const isHeader = cellData.isHeader || false;
                     const tag = isHeader ? 'th' : 'td';
+                    const bgAttr = cellBg ? `background-color:${cellBg};` : '';
                     const widthAttr = cellData.width ? `width:${cellData.width};` : '';
                     const heightAttr = cellData.height ? `height:${cellData.height};` : '';
                     if (!cellData.hidden) {
                         const rsAttr = rowspan > 1 ? ` rowspan="${rowspan}"` : '';
                         const csAttr = colspan > 1 ? ` colspan="${colspan}"` : '';
-                        cellsHTML += `<${tag}${rsAttr}${csAttr} contenteditable="true" style="border:1px solid ${cellBorder};background-color:${cellBg};padding:6px 10px;min-width:60px;min-height:28px;vertical-align:top;word-break:break-word;${widthAttr}${heightAttr}">${cellContent}</${tag}>`;
+                        cellsHTML += `<${tag}${rsAttr}${csAttr} contenteditable="true" style="border:1px solid ${cellBorder};${bgAttr}padding:6px 10px;min-width:60px;min-height:28px;vertical-align:top;word-break:break-word;${widthAttr}${heightAttr}">${cellContent}</${tag}>`;
                     }
                 }
                 cellsHTML += '</tr>';
@@ -1501,6 +1504,11 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
             <label class="tbl-color-label" title="표 너비 (데스크탑 기준 %, 모바일에서는 항상 100%)">
                 <i class="fa-solid fa-arrows-left-right"></i>
                 <input type="number" class="tbl-width-input" min="10" max="100" step="1" value="${tblWidthPercent}" onchange="tableSetWidthPercent(this)">%
+            </label>
+            <span class="tbl-sep"></span>
+            <label class="tbl-color-label" title="선택한 셀이 속한 열의 너비 (%, 표 자체 너비 기준)">
+                <i class="fa-solid fa-ruler-horizontal"></i>
+                <input type="number" class="tbl-colwidth-input" min="1" max="100" step="1" placeholder="열 너비%" onchange="tableSetColumnWidth(this)">%
             </label>
             <span class="tbl-cell-info"></span>
         </div>
@@ -1629,10 +1637,38 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
         const toggleColorLabel = block.querySelector('.toggle-btn-color-label');
         const toggleColorInput = block.querySelector('.toggle-btn-color');
         const toggleColorDisplay = block.querySelector('.toggle-btn-color-display');
+
+        const wireResetBtn = (resetBtn) => {
+            resetBtn.addEventListener('click', () => {
+                toggleColorInput.dataset.custom = 'false';
+                if (toggleColorDisplay) {
+                    toggleColorDisplay.style.background = 'transparent';
+                    toggleColorDisplay.style.borderStyle = 'dashed';
+                }
+                resetBtn.remove();
+                debouncedGenerateHTML();
+            });
+        };
+        const existingResetBtn = block.querySelector('.toggle-btn-color-reset');
+        if (existingResetBtn) wireResetBtn(existingResetBtn);
+
         if (toggleColorLabel && toggleColorInput) {
             toggleColorLabel.addEventListener('click', () => toggleColorInput.click());
             toggleColorInput.addEventListener('input', function() {
-                if (toggleColorDisplay) toggleColorDisplay.style.background = this.value;
+                this.dataset.custom = 'true';
+                if (toggleColorDisplay) {
+                    toggleColorDisplay.style.background = this.value;
+                    toggleColorDisplay.style.borderStyle = 'solid';
+                }
+                if (!block.querySelector('.toggle-btn-color-reset')) {
+                    const resetBtn = document.createElement('button');
+                    resetBtn.type = 'button';
+                    resetBtn.className = 'tbl-transparent-btn toggle-btn-color-reset';
+                    resetBtn.title = '버튼 색을 스킨 기본색으로 되돌리기';
+                    resetBtn.textContent = '↺';
+                    wireResetBtn(resetBtn);
+                    toggleColorLabel.after(resetBtn);
+                }
                 debouncedGenerateHTML();
             });
         }
@@ -1678,7 +1714,9 @@ function generateSingleBlockHTML(block) {
         case 'toggle': {
             const openLabel = block.querySelector('.toggle-open-label')?.innerHTML.trim() || '더보기';
             const closeLabel = block.querySelector('.toggle-close-label')?.innerHTML.trim() || '닫기';
-            const btnColor = block.querySelector('.toggle-btn-color')?.value || '#000000';
+            const btnColorInput = block.querySelector('.toggle-btn-color');
+            const btnColor = btnColorInput?.value || '#000000';
+            const btnColorCustom = btnColorInput?.dataset.custom === 'true';
             const nestedContainer = block.querySelector('.toggle-blocks-container');
             let nestedHTML = '';
             if (nestedContainer) {
@@ -1688,8 +1726,9 @@ function generateSingleBlockHTML(block) {
             }
             const escapedOpenLabel = openLabel.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
             const escapedCloseLabel = closeLabel.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            
-            return `<div class="wiki-toggle-wrap text1"><p><a class="wiki-toggle-btn" href="javascript:void(0)" onclick="(function(btn){var w=btn.closest('.wiki-toggle-wrap'); var b=w.querySelector('.wiki-toggle-body'); var isOpen=b.style.display!=='none'; b.style.display=isOpen?'none':'block'; btn.innerHTML=isOpen?btn.dataset.openLabel:btn.dataset.closeLabel;})(this)" data-open-label="${escapedOpenLabel}" data-close-label="${escapedCloseLabel}" style="color: ${btnColor} !important; text-decoration: none !important; cursor: pointer;">${openLabel}</a></p><div class="wiki-toggle-body" style="display:none; padding-top:8px;">${nestedHTML}</div></div>\n`;
+            const colorStyle = btnColorCustom ? `color: ${btnColor} !important;` : `color: inherit;`;
+
+            return `<div class="wiki-toggle-wrap text1"><p><a class="wiki-toggle-btn" href="javascript:void(0)" onclick="(function(btn){var w=btn.closest('.wiki-toggle-wrap'); var b=w.querySelector('.wiki-toggle-body'); var isOpen=b.style.display!=='none'; b.style.display=isOpen?'none':'block'; btn.innerHTML=isOpen?btn.dataset.openLabel:btn.dataset.closeLabel;})(this)" data-open-label="${escapedOpenLabel}" data-close-label="${escapedCloseLabel}" style="${colorStyle} text-decoration: none !important; cursor: pointer; font-size: var(--wiki-font-size, 14px); -webkit-text-size-adjust: 100%; text-size-adjust: 100%;">${openLabel}</a></p><div class="wiki-toggle-body" style="display:none; padding-top:8px;">${nestedHTML}</div></div>\n`;
         }
         case 'image': {
             const imgSrc = block.querySelector('.media-url')?.value.trim() || '';
@@ -1728,19 +1767,19 @@ function generateSingleBlockHTML(block) {
             const outBorderColor = tbl.dataset.outBorderColor || tbl.dataset.borderColor || '#cccccc';
             const widthPct = parseInt(tbl.dataset.widthPct) || 100;
             const rows = tbl.querySelectorAll('tr');
-            let tableHTML = `<table class="wiki-table-scaled" style="--table-width-pct: ${widthPct}%; border-collapse:collapse;margin:1em 0; border: 2px solid ${outBorderColor};">`;
+            let tableHTML = `<table class="wiki-table-scaled" style="--table-width-pct: ${widthPct}%; border-collapse:collapse;table-layout:fixed;margin:1em 0; border: 2px solid ${outBorderColor};">`;
             rows.forEach(row => {
                 tableHTML += '<tr>';
                 row.querySelectorAll('td, th').forEach(cell => {
                     const tag = cell.tagName.toLowerCase();
                     const rowspan = cell.getAttribute('rowspan') > 1 ? ` rowspan="${cell.getAttribute('rowspan')}"` : '';
                     const colspan = cell.getAttribute('colspan') > 1 ? ` colspan="${cell.getAttribute('colspan')}"` : '';
-                    const bg = cell.style.backgroundColor || '#ffffff';
+                    const bg = cell.style.backgroundColor ? `background-color:${cell.style.backgroundColor};` : '';
                     const border = cell.style.borderColor || '#cccccc';
                     const padding = '6px 10px';
                     const width = cell.style.width ? `width:${cell.style.width};` : '';
                     const height = cell.style.height ? `height:${cell.style.height};` : '';
-                    tableHTML += `<${tag}${rowspan}${colspan} style="border:1px solid ${border};background-color:${bg};padding:${padding};vertical-align:top;word-break:break-word;${width}${height}">${cell.innerHTML}</${tag}>`;
+                    tableHTML += `<${tag}${rowspan}${colspan} style="border:1px solid ${border};${bg}padding:${padding};vertical-align:top;word-break:break-word;${width}${height}">${cell.innerHTML}</${tag}>`;
                 });
                 tableHTML += '</tr>';
             });
@@ -1877,12 +1916,10 @@ function tableAddRow(btn) {
     const colCount = Array.from(rows[0].querySelectorAll('td, th')).reduce((s, c) => s + (parseInt(c.getAttribute('colspan')) || 1), 0);
     const newRow = document.createElement('tr');
     const borderColor = table.dataset.borderColor || '#cccccc';
-    const bgColor = table.dataset.bgColor || '#ffffff';
     for (let i = 0; i < colCount; i++) {
         const td = document.createElement('td');
         td.setAttribute('contenteditable', 'true');
         td.style.border = `1px solid ${borderColor}`;
-        td.style.backgroundColor = bgColor;
         td.style.padding = '6px 10px';
         td.style.minWidth = '60px';
         td.style.verticalAlign = 'top';
@@ -1903,7 +1940,6 @@ function tableAddCol(btn) {
     const tbody = table.querySelector('tbody');
     const rows = tbody.querySelectorAll('tr');
     const borderColor = table.dataset.borderColor || '#cccccc';
-    const bgColor = table.dataset.bgColor || '#ffffff';
 
     let targetColIndex = -1;
     if (selected.length > 0) {
@@ -1916,7 +1952,6 @@ function tableAddCol(btn) {
         const td = document.createElement('td');
         td.setAttribute('contenteditable', 'true');
         td.style.border = `1px solid ${borderColor}`;
-        td.style.backgroundColor = bgColor;
         td.style.padding = '6px 10px';
         td.style.minWidth = '60px';
         td.style.verticalAlign = 'top';
@@ -2118,6 +2153,37 @@ function tableSetWidthPercent(input) {
     pct = Math.min(100, Math.max(10, pct));
     input.value = pct;
     table.dataset.widthPct = pct;
+    debouncedGenerateHTML();
+}
+
+function tableSetColumnWidth(input) {
+    const wrap = input.closest('.editable-table-wrap');
+    const table = wrap.querySelector('.editable-table');
+    const selected = wrap.querySelectorAll('td.tbl-selected, th.tbl-selected');
+    if (selected.length === 0) {
+        alert('너비를 지정할 셀을 먼저 선택해주세요.');
+        input.value = '';
+        return;
+    }
+
+    let pct = parseFloat(input.value);
+    if (isNaN(pct) || pct <= 0) {
+        input.value = '';
+        return;
+    }
+    pct = Math.min(100, pct);
+    input.value = pct;
+
+    const refCell = selected[selected.length - 1];
+    const refRow = refCell.closest('tr');
+    const cellsInRefRow = Array.from(refRow.querySelectorAll('td, th'));
+    const colIndex = cellsInRefRow.indexOf(refCell);
+
+    table.querySelectorAll('tr').forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td, th'));
+        const cell = cells[colIndex];
+        if (cell) cell.style.width = pct + '%';
+    });
     debouncedGenerateHTML();
 }
 
@@ -2363,7 +2429,7 @@ function serializeTableForSave(tbl) {
             const colspan = parseInt(cell.getAttribute('colspan')) || 1;
             grid[r][c] = {
                 content: cell.innerHTML,
-                bg: cell.style.backgroundColor || bgColor,
+                bg: cell.style.backgroundColor || '',
                 border: cell.style.borderColor || borderColor,
                 rowspan,
                 colspan,
@@ -2436,6 +2502,7 @@ function saveData() {
                 item.openLabel = block.querySelector('.toggle-open-label')?.innerHTML.trim() || '';
                 item.closeLabel = block.querySelector('.toggle-close-label')?.innerHTML.trim() || '';
                 item.btnColor = block.querySelector('.toggle-btn-color')?.value || '#000000';
+                item.btnColorCustom = block.querySelector('.toggle-btn-color')?.dataset.custom === 'true';
                 const nestedContainer = block.querySelector('.toggle-blocks-container');
                 item.nestedBlocks = [];
                 if (nestedContainer) {
