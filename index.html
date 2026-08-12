@@ -162,7 +162,7 @@
           <div class="toolbar-divider"></div>
           <div class="toolbar-group">
             <button class="toolbar-button" onclick="changeFontSize(-1, 'basic')" title="글씨 크기 줄이기"><i class="fa-solid fa-chevron-down"></i></button>
-            <span class="toolbar-font-size-label">Aa</span>
+            <input type="number" id="basicFontSizeInput" class="toolbar-fontsize-input" min="8" max="72" step="1" placeholder="14" title="글씨 크기 직접 입력 (px)" onchange="setFontSizeExact(this, 'basic')" />
             <button class="toolbar-button" onclick="changeFontSize(1, 'basic')" title="글씨 크기 키우기"><i class="fa-solid fa-chevron-up"></i></button>
           </div>
           <div class="toolbar-divider"></div>
@@ -224,7 +224,7 @@
 
           <div class="toolbar-group">
             <button class="toolbar-button" onclick="changeFontSize(-1, 'body')" title="글씨 크기 줄이기"><i class="fa-solid fa-chevron-down"></i></button>
-            <span class="toolbar-font-size-label">Aa</span>
+            <input type="number" id="bodyFontSizeInput" class="toolbar-fontsize-input" min="8" max="72" step="1" placeholder="14" title="글씨 크기 직접 입력 (px)" onchange="setFontSizeExact(this, 'body')" />
             <button class="toolbar-button" onclick="changeFontSize(1, 'body')" title="글씨 크기 키우기"><i class="fa-solid fa-chevron-up"></i></button>
           </div>
 
