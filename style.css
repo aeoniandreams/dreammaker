@@ -880,6 +880,8 @@ input::placeholder { color: var(--text-3); }
 
 .wiki-toggle-btn {
   font-size: var(--wiki-font-size) !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 
@@ -1235,6 +1237,8 @@ button {
   line-height: var(--wiki-line-height);
   max-width: var(--wiki-max-width);
   margin: 0 auto;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 #wikiwrap a,
@@ -1321,14 +1325,15 @@ details[open] .wiki-h3-icon ion-icon {
   line-height: var(--wiki-line-height);
 }
 
-.text1 ul,
-.text1 ol {
-  padding-left: 1.4em;
-  margin: 0.4em 0;
+#wikiwrap ul,
+#wikiwrap ol {
+  padding-left: 1.4em !important;
+  margin: 0.4em 0 !important;
+  list-style-position: outside !important;
 }
 
-.text1 li {
-  margin: 0.2em 0;
+#wikiwrap li {
+  margin: 0.2em 0 !important;
 }
 
 .wiki-category {
