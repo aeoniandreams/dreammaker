@@ -549,17 +549,30 @@ input::placeholder { color: var(--text-3); }
   white-space: nowrap;
 }
 
-.toolbar-font-size-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
+.toolbar-fontsize-input {
+  width: 36px !important;
   height: 32px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-3);
-  user-select: none;
+  padding: 0 2px !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.78rem !important;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: center;
   flex-shrink: 0;
+  background: var(--surface);
+  -moz-appearance: textfield;
+}
+
+.toolbar-fontsize-input::-webkit-outer-spin-button,
+.toolbar-fontsize-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.toolbar-fontsize-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--primary-ring);
 }
 
 /* ── Dropdown ──────────────────────────────── */
@@ -1412,6 +1425,16 @@ details[open] .wiki-h3-icon ion-icon {
   line-height: 0;
 }
 
+.wiki-table-scaled {
+  width: var(--table-width-pct, 100%);
+}
+
+@media (max-width: 767px) {
+  .wiki-table-scaled {
+    width: 100% !important;
+  }
+}
+
 .wiki-img-sing td {
   padding: 0;
   border: 2px solid var(--wiki-main-color);
@@ -1586,6 +1609,24 @@ details[open] .wiki-h3-icon ion-icon {
   cursor: pointer;
   background: transparent;
   box-shadow: none !important;
+}
+
+.tbl-width-input {
+  width: 34px !important;
+  padding: 0 2px !important;
+  border: none !important;
+  background: transparent;
+  box-shadow: none !important;
+  font-size: 0.78rem !important;
+  color: var(--text-2);
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.tbl-width-input::-webkit-outer-spin-button,
+.tbl-width-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .tbl-transparent-btn {
