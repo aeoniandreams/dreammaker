@@ -226,7 +226,7 @@ function generateHTML() {
       titleTimeHTML = `
       <div style="margin-bottom: 1.5rem;">
         <h1 style="font-size: 2rem; font-weight: 700; line-height: 1; margin: 0;">${finalTitle}</h1>
-        <p style="font-size: .9rem; margin: .5rem 0 0; color: rgb(85, 85, 85);">최근 수정 시각: <time>${getFormattedTime()}</time></p>
+        <p style="font-size: .9rem; margin: .5rem 0 0; color: inherit; opacity: 0.7;">최근 수정 시각: <time>${getFormattedTime()}</time></p>
       </div>`;
   }
   let rubyBlock = '';
@@ -390,7 +390,7 @@ let rawHTML = `
     padding: 5px 10px;
     border: 1px solid var(--wiki-border-color);
     text-align: center;
-    color: #000;
+    color: inherit !important;
 }
 
 .wt-color {
@@ -409,7 +409,7 @@ let rawHTML = `
     border: 1px solid var(--wiki-border-color);
     border-bottom: 1px solid var(--wiki-border-color);
     text-align: left;
-    color: #000;
+    color: inherit !important;
 }
 
 .wiki-main-table tr:last-child > td {
