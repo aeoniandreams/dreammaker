@@ -1330,10 +1330,25 @@ details[open] .wiki-h3-icon ion-icon {
   padding-left: 1.4em !important;
   margin: 0.4em 0 !important;
   list-style-position: outside !important;
+  color: inherit !important;
+}
+
+#wikiwrap ul {
+  list-style-type: disc !important;
+}
+
+#wikiwrap ol {
+  list-style-type: decimal !important;
 }
 
 #wikiwrap li {
   margin: 0.2em 0 !important;
+  color: inherit !important;
+}
+
+#wikiwrap ul li::marker,
+#wikiwrap ol li::marker {
+  color: inherit !important;
 }
 
 .wiki-category {
