@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>위키 표 생성기</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://kit.fontawesome.com/751d015302.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<nav id="mobile-nav">
+  <div class="mobile-nav-inner">
+    <span class="brand-mark">위키 표 생성기</span>
+    <div class="mobile-view-toggle">
+      <button class="view-btn active" data-show="input">
+        <i class="fa-solid fa-pen-to-square"></i> 편집
+      </button>
+      <button class="view-btn" data-show="preview">
+        <i class="fa-solid fa-eye"></i> 미리보기
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div id="container">
+
+  <div id="input-section">
+
+    <div class="input-header">
+      <div class="header-left">
+        <span class="app-logo">✦</span>
+        <h1>위키 표 생성기</h1>
+      </div>
+      <div class="tab-menu">
+        <button class="tab-button active" data-tab="basic">기본 정보</button>
+        <button class="tab-button" data-tab="body">본문 에디터</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-basic">
+      <section class="section-block">
+        <h3 class="section-title">
+          <i class="fa-solid fa-palette fa-fw"></i> 테마 색상
+        </h3>
+        <label class="color-picker-wrapper" for="mainColorPicker">
+          <div class="color-display"></div>
+          <input type="color" id="mainColorPicker" value="#8d27ae" />
+          <span>메인 테마 색상 선택</span>
+          <i class="fa-solid fa-chevron-right fa-fw color-arrow"></i>
+        </label>
+      </section>
+
+      <section class="section-block">
+        <h3 class="section-title">
+          <i class="fa-solid fa-heading fa-fw"></i> 문서 제목 및 시간
+        </h3>
+        <div class="input-fields" style="padding: 1rem 1.25rem;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; margin-bottom: 10px;">
+            <input type="checkbox" id="showDocTitle" checked onchange="debouncedGenerateHTML()" />
+            문서 최상단에 제목 및 최근 수정 시각 표시
+          </label>
+          <div class="input-group">
+            <label class="field-label">문서 제목</label>
+            <input id="docTitle" placeholder="문서 제목 입력 (미입력 시 캐릭터 이름 사용)" oninput="debouncedGenerateHTML()" />
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block">
+        <h3 class="section-title">
+          <i class="fa-solid fa-user fa-fw"></i> 캐릭터 정보
+        </h3>
+        <div class="input-fields">
+          <div class="input-group">
+            <label class="field-label">캐릭터 이름 <span class="required">*</span></label>
+            <input id="charName" placeholder="한국어 이름 입력" />
+          </div>
+
+          <div class="input-row-pair">
+            <div class="input-group">
+              <label class="field-label">일본 성</label>
+              <input id="jpSurname" placeholder="성 (한자)" />
+            </div>
+            <div class="input-group">
+              <label class="field-label">성 후리가나</label>
+              <input id="jpSurnameFurigana" placeholder="ふりがな" />
+            </div>
+          </div>
+
+          <div class="input-row-pair">
+            <div class="input-group">
+              <label class="field-label">일본 이름</label>
+              <input id="jpName" placeholder="이름 (한자)" />
+            </div>
+            <div class="input-group">
+              <label class="field-label">이름 후리가나</label>
+              <input id="jpNameFurigana" placeholder="ふりがな" />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="field-label">영문 이름</label>
+            <input id="enName" placeholder="English Name" />
+          </div>
+
+          <div class="input-group">
+            <label class="field-label">캐릭터 이미지 URL</label>
+            <input id="imageUrl" placeholder="https://example.com/image.jpg" />
+          </div>
+
+          <div class="input-group">
+            <label class="field-label">이미지 출처 / 저작권</label>
+            <input id="copyright" placeholder="ⓒ 작가명 / 출처 표기" />
+          </div>
+
+          <div class="input-group" style="margin-top: 10px;">
+            <label class="field-label" style="display: flex; justify-content: space-between;">
+              <span>분류</span>
+              <button type="button" onclick="addCategoryRow()" style="background: none; border: none; color: var(--primary); font-size: 0.8rem; cursor: pointer; font-weight: 600;">
+                <i class="fa-solid fa-plus"></i> 추가
+              </button>
+            </label>
+            <div id="category-list">
+              <div class="category-row" style="display:flex; gap:8px; margin-bottom:8px;">
+                <input class="cat-text" placeholder="장르/등장인물" style="flex:1;" oninput="debouncedGenerateHTML()" />
+                <input class="cat-link" placeholder="URL (선택)" style="flex:1;" oninput="debouncedGenerateHTML()" />
+                <button type="button" onclick="this.parentElement.remove(); debouncedGenerateHTML();" style="border:none; background:transparent; color:#ef4444; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block">
+        <h3 class="section-title">
+          <i class="fa-solid fa-list fa-fw"></i> 상세 프로필
+        </h3>
+
+        <div id="basic-toolbar">
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicExec('bold')" title="굵게"><i class="fa-solid fa-bold"></i></button>
+            <button class="toolbar-button" onclick="basicExec('italic')" title="기울임"><i class="fa-solid fa-italic"></i></button>
+            <button class="toolbar-button" onclick="basicExec('strikethrough')" title="취소선"><i class="fa-solid fa-strikethrough"></i></button>
+            <label class="toolbar-button" for="basicFontColorPicker" title="글자 색상"><i class="fa-solid fa-palette"></i></label>
+            <input type="color" id="basicFontColorPicker" style="visibility:hidden;position:absolute;width:0;height:0;" />
+            <label class="toolbar-button" for="basicBgColorPicker" title="형광펜"><i class="fa-solid fa-highlighter"></i></label>
+            <input type="color" id="basicBgColorPicker" value="#ffff00" style="visibility:hidden;position:absolute;width:0;height:0;" />
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicExec('justifyLeft')" title="왼쪽 정렬"><i class="fa-solid fa-align-left"></i></button>
+            <button class="toolbar-button" onclick="basicExec('justifyCenter')" title="가운데 정렬"><i class="fa-solid fa-align-center"></i></button>
+            <button class="toolbar-button" onclick="basicExec('justifyRight')" title="오른쪽 정렬"><i class="fa-solid fa-align-right"></i></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicExec('insertUnorderedList')" title="글머리 기호 목록"><i class="fa-solid fa-list-ul"></i></button>
+            <button class="toolbar-button" onclick="basicExec('insertOrderedList')" title="번호 매기기 목록"><i class="fa-solid fa-list-ol"></i></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="changeFontSize(-1, 'basic')" title="글씨 크기 줄이기"><i class="fa-solid fa-chevron-down"></i></button>
+            <input type="number" id="basicFontSizeInput" class="toolbar-fontsize-input" min="8" max="72" step="1" placeholder="14" title="글씨 크기 직접 입력 (px)" onchange="setFontSizeExact(this, 'basic')" />
+            <button class="toolbar-button" onclick="changeFontSize(1, 'basic')" title="글씨 크기 키우기"><i class="fa-solid fa-chevron-up"></i></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicApplyLink()" title="링크"><i class="fa-solid fa-link"></i></button>
+            <button class="toolbar-button" onclick="basicApplySourceLink()" title="출처 링크"><ion-icon name="link-outline"></ion-icon></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicAddToggle()" title="토글 블록"><i class="fa-solid fa-chevron-right"></i></button>
+            <button class="toolbar-button" onclick="basicInsertFootnote()" title="각주 추가"><i class="fa-solid fa-asterisk"></i></button>
+          </div>
+        </div>
+
+        <div class="field-list-wrapper">
+          <div id="field-list">
+            <div class="field-row">
+              <div class="drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+              <input class="field-name" placeholder="항목명" />
+              <div class="field-value" contenteditable="true" data-placeholder="내용"></div>
+            </div>
+          </div>
+          <button onclick="addField()" class="btn-add-field">
+            <i class="fa-solid fa-plus"></i> 항목 추가
+          </button>
+        </div>
+      </section>
+
+    </div>
+    <div class="tab-content hidden" id="tab-body">
+      <div class="editor-wrap">
+        <div id="body-toolbar">
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="document.execCommand('bold')" title="굵게"><i class="fa-solid fa-bold"></i></button>
+            <button class="toolbar-button" onclick="document.execCommand('italic')" title="기울임"><i class="fa-solid fa-italic"></i></button>
+            <button class="toolbar-button" onclick="document.execCommand('strikethrough')" title="취소선"><i class="fa-solid fa-strikethrough"></i></button>
+            <label class="toolbar-button" for="fontColorPicker" title="글자 색상"><i class="fa-solid fa-palette"></i></label>
+            <input type="color" id="fontColorPicker" style="visibility:hidden;position:absolute;width:0;height:0;" />
+            <label class="toolbar-button" for="bgColorPicker" title="형광펜"><i class="fa-solid fa-highlighter"></i></label>
+            <input type="color" id="bgColorPicker" value="#ffff00" style="visibility:hidden;position:absolute;width:0;height:0;" />
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="document.execCommand('justifyLeft')" title="왼쪽 정렬"><i class="fa-solid fa-align-left"></i></button>
+            <button class="toolbar-button" onclick="document.execCommand('justifyCenter')" title="가운데 정렬"><i class="fa-solid fa-align-center"></i></button>
+            <button class="toolbar-button" onclick="document.execCommand('justifyRight')" title="오른쪽 정렬"><i class="fa-solid fa-align-right"></i></button>
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="document.execCommand('insertUnorderedList')" title="글머리 기호 목록"><i class="fa-solid fa-list-ul"></i></button>
+            <button class="toolbar-button" onclick="document.execCommand('insertOrderedList')" title="번호 매기기 목록"><i class="fa-solid fa-list-ol"></i></button>
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="changeFontSize(-1, 'body')" title="글씨 크기 줄이기"><i class="fa-solid fa-chevron-down"></i></button>
+            <input type="number" id="bodyFontSizeInput" class="toolbar-fontsize-input" min="8" max="72" step="1" placeholder="14" title="글씨 크기 직접 입력 (px)" onchange="setFontSizeExact(this, 'body')" />
+            <button class="toolbar-button" onclick="changeFontSize(1, 'body')" title="글씨 크기 키우기"><i class="fa-solid fa-chevron-up"></i></button>
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group">
+            <div class="dropdown">
+              <button class="toolbar-button has-text" title="제목 블록">
+                <i class="fa-solid fa-heading"></i>
+                <span>제목</span>
+                <i class="fa-solid fa-chevron-down fa-xs"></i>
+              </button>
+              <div class="dropdown-content">
+                <a href="#" onclick="event.preventDefault(); addBlock('h1')"><span class="dd-badge">H1</span> 대제목</a>
+                <a href="#" onclick="event.preventDefault(); addBlock('h2')"><span class="dd-badge">H2</span> 중제목</a>
+                <a href="#" onclick="event.preventDefault(); addBlock('h3')"><span class="dd-badge">H3</span> 소제목</a>
+              </div>
+            </div>
+            <button class="toolbar-button has-text" onclick="addBlock('text')" title="본문 블록">
+              <i class="fa-solid fa-paragraph"></i><span>본문</span>
+            </button>
+            <button class="toolbar-button" onclick="addBlock('quote')" title="대사 블록"><i class="fa-solid fa-comment-dots"></i></button>
+            <button class="toolbar-button" onclick="addBlock('quote2')" title="대사형식2"><i class="fa-solid fa-comments"></i></button>
+            <button class="toolbar-button" onclick="addBlock('warn')" title="스포일러 주의"><i class="fa-solid fa-triangle-exclamation"></i></button>
+            <button class="toolbar-button" onclick="addBlock('toggle')" title="토글 블록"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="applyLink()" title="링크"><i class="fa-solid fa-link"></i></button>
+            <button class="toolbar-button" onclick="applySourceLink()" title="출처 링크"><ion-icon name="link-outline"></ion-icon></button>
+            <button class="toolbar-button" onclick="addBlock('image')" title="이미지 추가"><i class="fa-solid fa-image"></i></button>
+            <button class="toolbar-button" onclick="addBlock('youtube')" title="유튜브"><i class="fa-brands fa-youtube"></i></button>
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="insertFootnote()" title="각주 추가"><i class="fa-solid fa-asterisk"></i></button>
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-button has-text" onclick="addBlock('table')" title="표 추가"><i class="fa-solid fa-table"></i><span>표</span></button>
+          </div>
+        </div>
+
+        <div id="editor-container"></div>
+      </div>
+    </div>
+
+    <div class="output-wrapper">
+      <div class="output-header">
+        <h3 class="section-title" style="margin:0">
+          <i class="fa-solid fa-code fa-fw"></i> 생성된 코드
+        </h3>
+        <button onclick="copyCode()" class="btn-copy">
+          <i class="fa-regular fa-copy"></i> 복사
+        </button>
+      </div>
+      <textarea id="output" readonly rows="4" placeholder="코드가 여기에 생성됩니다..."></textarea>
+      <div class="output-actions">
+        <button onclick="saveData()" class="btn-icon-text">
+          <i class="fa-solid fa-download"></i> 저장
+        </button>
+        <button onclick="document.getElementById('fileInput').click()" class="btn-icon-text">
+          <i class="fa-solid fa-upload"></i> 불러오기
+        </button>
+        <input type="file" id="fileInput" accept=".json" onchange="loadData(event)" style="display:none;" />
+      </div>
+    </div>
+
+    <div class="floating-btn-wrapper">
+      <button onclick="generateHTML()" class="floating-btn" title="HTML 코드 생성">
+        <i class="fa-solid fa-rotate"></i>
+        <span>코드 갱신</span>
+      </button>
+    </div>
+
+  </div>
+
+  <div id="resizer"></div>
+
+  <div id="preview-section">
+    <div class="preview-header">
+      <h2>미리보기</h2>
+      <p class="description">환경에 따라 실제 적용 모습과 다를 수 있어요.</p>
+    </div>
+    <div id="preview"></div>
+  </div>
+
+</div>
+
+<div id="help-button" title="사용 방법">
+  <i class="fa-solid fa-question"></i>
+</div>
+
+<div id="help-popup" class="hidden">
+  <div class="help-content">
+    <div class="help-header">
+      <h4>사용 방법</h4>
+    </div>
+    <div class="how-to-info">
+      <h5><i class="fa-solid fa-circle-info fa-fw"></i> 기본 사용법</h5>
+      <ol>
+        <li>각 입력란에 캐릭터 정보를 입력하세요.</li>
+        <li><span class="keyword-highlight">항목 추가</span>로 원하는 만큼 줄을 추가할 수 있어요.</li>
+        <li>주석은 <span class="keyword-highlight">{{주석 내용}}</span>을 넣으면 자동으로 완성됩니다.
+        <br><span class="keyword-highlight">{{[스포일러]|주석내용}}</span>으로 텍스트 주석을 넣을 수 있어요!</li>
+        <li>우측 미리보기는 입력 시 자동 갱신됩니다. 수동 갱신은 <span class="keyword-highlight">코드 갱신</span>을 누르세요.</li>
+        <li>티스토리 글쓰기 → 기본모드 → <span class="keyword-highlight">HTML 모드</span>에서 코드를 붙여 넣으면 끝!</li>
+        <li>작업 내용은 <span class="keyword-highlight">저장</span> 버튼으로 JSON 파일로 보관하세요.</li>
+      </ol>
+    </div>
+    <div class="how-to-tip">
+      <h5><i class="fa-solid fa-lightbulb fa-fw"></i> TIP</h5>
+      <ol>
+        <li>본문 에디터의 블록은 드래그하여 순서를 바꿀 수 있습니다.</li>
+        <li>아이콘이 표시되지 않으면 티스토리 스킨 HTML의 <span class="keyword-highlight">&lt;/body&gt;</span> 바로 위에 Ionicons 스크립트를 추가해 주세요. <a style="color: var(--primary);" href="https://ionic.io/ionicons/usage" target="_blank"><ion-icon name="arrow-redo"></ion-icon></a></li>
+        <li>HTML 모드로 글을 저장한 후 수정할 때는 사이트를 이용해주세요. 티스토리 에디터 내에서 기본 모드로 전환한 후 저장 시 코드의 일부분이 사라집니다</li>
+      </ol>
+    </div>
+    <button id="close-help">닫기</button>
+  </div>
+</div>
+
+<script src="newscript.js"></script>
+
+<script>
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const view = btn.dataset.show;
+      const inputSec = document.getElementById('input-section');
+      const previewSec = document.getElementById('preview-section');
+      const resizer = document.getElementById('resizer');
+      if (window.innerWidth < 900) {
+        inputSec.style.display = view === 'input' ? 'flex' : 'none';
+        previewSec.style.display = view === 'preview' ? 'block' : 'none';
+        resizer.style.display = 'none';
+      }
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 900) {
+      document.getElementById('input-section').style.display = '';
+      document.getElementById('preview-section').style.display = '';
+      document.getElementById('resizer').style.display = '';
+    }
+  });
+</script>
+
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</body>
+</html>
