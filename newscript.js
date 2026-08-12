@@ -1,4 +1,4 @@
-// WIKIMAKER_BUILD: 2026-08-12-15 (column width w/ merged rows fix)
+// WIKIMAKER_BUILD: 2026-08-12-17 (fix alignment shrinking font size)
 const debouncedGenerateHTML = (function() {
     let timeout;
     return function() {
@@ -194,7 +194,7 @@ function addField() {
   row.className = "field-row";
   row.innerHTML = `
     <div class="drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
-    <input class="field-name" placeholder="항목명" />
+    <div class="field-name" contenteditable="true" data-placeholder="항목명"></div>
     <div class="field-value" contenteditable="true" data-placeholder="내용"></div>
   `;
   list.appendChild(row);
@@ -247,7 +247,8 @@ function generateHTML() {
   const rows = document.querySelectorAll(".field-row");
   let detailRows = '';
   rows.forEach(row => {
-    const field = row.querySelector(".field-name").value.trim();
+    const nameEl = row.querySelector(".field-name");
+    const field = nameEl ? (nameEl.tagName === 'INPUT' ? nameEl.value.trim() : nameEl.innerHTML.trim()) : '';
     const valueEl = row.querySelector(".field-value");
     const value = valueEl ? (valueEl.tagName === 'INPUT' ? valueEl.value.trim() : valueEl.innerHTML.trim()) : '';
     if (field && value) {
@@ -1006,7 +1007,39 @@ function basicExec(cmd) {
         restoreBasicRange();
     }
     document.execCommand(cmd);
+    stripAutoInjectedFontSize(document.getElementById('field-list'));
     saveBasicRange();
+    debouncedGenerateHTML();
+}
+
+// Chrome's justify/list commands wrap the selection in a new block element
+// and, to keep the visible size unchanged across that restructuring, copy
+// the selection's current computed font-size back in as an inline style —
+// using whatever unit the matched CSS rule was written in (rem/em, since
+// our own editor-only styling uses those). That editor-only size then gets
+// baked into the saved innerHTML and leaks into the exported HTML, where it
+// resolves against a different font-size context than the editor did. We
+// never set font-size in rem/em ourselves (only px, via the size stepper),
+// so any bare rem/em value found here is that browser artifact and safe to
+// strip, letting the element inherit its size normally again.
+function stripAutoInjectedFontSize(container) {
+    if (!container) return;
+    container.querySelectorAll('[style*="font-size"]').forEach(el => {
+        const fs = el.style.fontSize;
+        if (fs && /^[\d.]+(rem|em)$/i.test(fs.trim())) {
+            el.style.removeProperty('font-size');
+            if (el.getAttribute('style') === '') el.removeAttribute('style');
+        }
+    });
+}
+
+function bodyExec(cmd) {
+    document.execCommand(cmd);
+    stripAutoInjectedFontSize(document.getElementById('editor-container'));
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        savedRange = selection.getRangeAt(0).cloneRange();
+    }
     debouncedGenerateHTML();
 }
 
@@ -2570,7 +2603,7 @@ function saveData() {
         link: row.querySelector(".cat-link").value
     })),
     fields: Array.from(document.querySelectorAll(".field-row")).map(row => ({
-      name: row.querySelector(".field-name").value,
+      name: (() => { const n = row.querySelector(".field-name"); return n ? (n.tagName === 'INPUT' ? n.value : n.innerHTML) : ''; })(),
       value: (() => { const v = row.querySelector(".field-value"); return v ? (v.tagName === 'INPUT' ? v.value : v.innerHTML) : ''; })()
     })),
     bodyContent: Array.from(document.querySelectorAll("#editor-container > .editable-block")).map(block => {
@@ -2722,7 +2755,7 @@ function loadData(event) {
       row.className = "field-row";
       row.innerHTML = `
         <div class="drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
-        <input class="field-name" value="${item.name}" placeholder="항목명" />
+        <div class="field-name" contenteditable="true" data-placeholder="항목명">${item.name || ''}</div>
         <div class="field-value" contenteditable="true" data-placeholder="내용">${item.value || ''}</div>
       `;
       fieldList.appendChild(row);
