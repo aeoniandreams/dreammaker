@@ -1616,7 +1616,8 @@ details[open] .wiki-h3-icon ion-icon {
   box-shadow: none !important;
 }
 
-.tbl-width-input {
+.tbl-width-input,
+.tbl-colwidth-input {
   width: 34px !important;
   padding: 0 2px !important;
   border: none !important;
@@ -1628,8 +1629,14 @@ details[open] .wiki-h3-icon ion-icon {
   -moz-appearance: textfield;
 }
 
+.tbl-colwidth-input {
+  width: 50px !important;
+}
+
 .tbl-width-input::-webkit-outer-spin-button,
-.tbl-width-input::-webkit-inner-spin-button {
+.tbl-width-input::-webkit-inner-spin-button,
+.tbl-colwidth-input::-webkit-outer-spin-button,
+.tbl-colwidth-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
@@ -1674,7 +1681,7 @@ details[open] .wiki-h3-icon ion-icon {
   border-collapse: collapse;
   width: 100%;
   min-width: 200px;
-  table-layout: auto;
+  table-layout: fixed;
 }
 
 .editable-table td,
