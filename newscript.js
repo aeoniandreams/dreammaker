@@ -1,4 +1,4 @@
-// WIKIMAKER_BUILD: 2026-08-12-17 (fix alignment shrinking font size)
+// WIKIMAKER_BUILD: 2026-08-13-1 (list bullets, name text color, pre-heading blocks)
 const debouncedGenerateHTML = (function() {
     let timeout;
     return function() {
@@ -64,15 +64,35 @@ function addCategoryRow(text = '', link = '') {
 
 function initializeColorPicker() {
     const colorPicker = document.getElementById("mainColorPicker");
-    const colorDisplay = document.querySelector(".color-display");
+    const colorDisplay = colorPicker.closest('label').querySelector(".color-display");
 
     colorDisplay.style.backgroundColor = colorPicker.value;
-    updatePreviewColor(colorPicker.value); 
+    updatePreviewColor(colorPicker.value);
 
     colorPicker.addEventListener("input", (e) => {
         colorDisplay.style.backgroundColor = e.target.value;
-        updatePreviewColor(e.target.value); 
-        debouncedGenerateHTML(); 
+        updatePreviewColor(e.target.value);
+        debouncedGenerateHTML();
+    });
+
+    const nameTextColorPicker = document.getElementById("nameTextColorPicker");
+    const nameTextColorDisplay = nameTextColorPicker.closest('label').querySelector(".color-display");
+
+    nameTextColorDisplay.style.backgroundColor = nameTextColorPicker.value;
+    updatePreviewNameTextColor(nameTextColorPicker.value);
+
+    nameTextColorPicker.addEventListener("input", (e) => {
+        nameTextColorDisplay.style.backgroundColor = e.target.value;
+        updatePreviewNameTextColor(e.target.value);
+        debouncedGenerateHTML();
+    });
+}
+
+function updatePreviewNameTextColor(color) {
+    const previewElement = document.getElementById("preview");
+    if (!previewElement) return;
+    previewElement.querySelectorAll('.wt-name, .wt-color').forEach(element => {
+        element.style.setProperty('color', color, 'important');
     });
 }
 
@@ -209,6 +229,7 @@ function getFormattedTime() {
 
 function generateHTML() {
   const color = document.getElementById("mainColorPicker").value;
+  const nameTextColor = document.getElementById("nameTextColorPicker").value;
   const name = document.getElementById("charName").value.trim();
   const jpSurname = document.getElementById("jpSurname").value.trim();
   const jpSurnameFuri = document.getElementById("jpSurnameFurigana").value.trim();
@@ -285,7 +306,7 @@ let rawHTML = `
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp.min.css");
 :root {
     --wiki-main-color: ${color};
-    --wiki-text-color: #ffffff;
+    --wiki-text-color: ${nameTextColor};
     --wiki-link-color: #0275d8;
     --wiki-border-color: #ddd;
     --wiki-bg-gray: #eee;
@@ -730,13 +751,43 @@ details[open] .wiki-h3-icon ion-icon {
 </div>
 `.trim();
 
+    rawHTML = inlineListStyles(rawHTML);
     const processedData = processFootnotes(rawHTML);
-    const fullHTML = processedData.html; 
+    const fullHTML = processedData.html;
 
     document.getElementById("output").value = fullHTML;
     document.getElementById("preview").innerHTML = fullHTML; 
     
     updatePreviewColor(color);
+}
+
+// Tistory's HTML-mode sanitizer can strip the <style> block on save, which
+// would silently drop the #wikiwrap ul/ol/li rules (list-style-type etc.)
+// and leave the site's own theme reset (many blog themes zero out list
+// bullets globally) in sole control. Bake the same rules on as inline
+// styles too, so the bullets still show even if the <style> block is gone.
+function inlineListStyles(html) {
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.querySelectorAll('ul').forEach(el => {
+        el.style.setProperty('padding-left', '1.4em');
+        el.style.setProperty('margin', '0.4em 0');
+        el.style.setProperty('list-style-position', 'outside');
+        el.style.setProperty('list-style-type', 'disc');
+        el.style.setProperty('color', 'inherit');
+    });
+    container.querySelectorAll('ol').forEach(el => {
+        el.style.setProperty('padding-left', '1.4em');
+        el.style.setProperty('margin', '0.4em 0');
+        el.style.setProperty('list-style-position', 'outside');
+        el.style.setProperty('list-style-type', 'decimal');
+        el.style.setProperty('color', 'inherit');
+    });
+    container.querySelectorAll('li').forEach(el => {
+        el.style.setProperty('margin', '0.2em 0');
+        el.style.setProperty('color', 'inherit');
+    });
+    return container.innerHTML;
 }
 
 function processFootnotes(html) {
@@ -1888,10 +1939,6 @@ function generateBodyHTML() {
             bodyHTML += `<details open><summary class="text1"><h2 class="${headingClass}"><span style="float: right; color: var(--wiki-link-color); font-size: 0.85rem; margin-top: 0.2em; cursor: pointer; text-decoration: none !important;">[편집]</span><span class="${iconClass}"><ion-icon name="chevron-down-outline"></ion-icon></span> <a name="${anchor}"></a><a href="#목차">${indexText}</a> ${textHTML}</h2></summary>\n`;
             openDetails = true;
         } else {
-            if (!openDetails && blocks.length > 0 && !block.previousElementSibling?.dataset.type.startsWith('h')) {
-                bodyHTML += `<details open style="display:none;"><summary></summary>\n`;
-                openDetails = true;
-            }
             bodyHTML += generateSingleBlockHTML(block);
         }
     });
@@ -2588,6 +2635,7 @@ function serializeTableForSave(tbl) {
 function saveData() {
   const data = {
     mainColor: document.getElementById("mainColorPicker").value,
+    nameTextColor: document.getElementById("nameTextColorPicker").value,
     showDocTitle: document.getElementById("showDocTitle")?.checked ?? true,
     docTitle: document.getElementById("docTitle")?.value || "",
     charName: document.getElementById("charName").value,
@@ -2715,8 +2763,15 @@ function loadData(event) {
     const data = JSON.parse(e.target.result);
 
     if (data.mainColor) {
-      document.getElementById("mainColorPicker").value = data.mainColor;
-      document.querySelector(".color-display").style.backgroundColor = data.mainColor;
+      const mainColorPicker = document.getElementById("mainColorPicker");
+      mainColorPicker.value = data.mainColor;
+      mainColorPicker.closest('label').querySelector('.color-display').style.backgroundColor = data.mainColor;
+    }
+
+    if (data.nameTextColor) {
+      const nameTextColorPicker = document.getElementById("nameTextColorPicker");
+      nameTextColorPicker.value = data.nameTextColor;
+      nameTextColorPicker.closest('label').querySelector('.color-display').style.backgroundColor = data.nameTextColor;
     }
 
     if (data.showDocTitle !== undefined) {
