@@ -2164,7 +2164,11 @@ function parseWikiHTML(raw) {
         a.replaceWith(doc.createTextNode(`@@TISFN${fnList.length - 1}@@`));
     });
     wrap.querySelectorAll('.wiki-footnote, script').forEach(el => el.remove());
-    const restoreFn = s => s.replace(/@@TISFN(\d+)@@/g, (m, i) => fnList[+i]);
+    // 이미지 자리가 아닌 곳(본문 글 속 등)에 남은 태그·자리표시는 글자 그대로 되돌린다.
+    const restoreFn = s => s
+        .replace(/@@TISFN(\d+)@@/g, (m, i) => fnList[+i])
+        .replace(/@@TISTAG(\d+)@@/g, (m, i) => tags[+i])
+        .replace(/@@TISMARK@@/g, '[[이미지]]');
 
     // 이미지 자리: 태그면 그 값을, 자리표시면 빈 값을 돌려준다. 해당 없으면 null.
     const slotValue = text => {
@@ -2358,7 +2362,7 @@ function runHtmlLoad() {
     const linked = tisSlotsInOrder.filter(s => s.value).length;
     const notes = [`코드를 불러왔어요. 이미지 태그 ${linked}개를 이미지 자리에 연결했고, 아직 이미지를 넣지 않은 자리가 ${tisSlotsInOrder.length - linked}개 있어요.`];
     if (linked !== parsed.tagCount) {
-        notes.push(`주의: 코드의 이미지 태그는 ${parsed.tagCount}개인데 ${linked}개만 연결됐어요. 본문 글 속에 직접 넣은 이미지 태그는 불러오지 못해요.`);
+        notes.push(`참고: 이미지 태그 ${parsed.tagCount - linked}개는 이미지 자리가 아닌 곳(본문 글 속 등)에 있어서 연결하지 않고 글자 그대로 남겨 뒀어요.`);
     }
     notes.push(...parsed.warnings);
     show(notes.join(" "), linked === parsed.tagCount && parsed.warnings.length === 0);
