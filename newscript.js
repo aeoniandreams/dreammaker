@@ -324,9 +324,10 @@ function generateHTML() {
   }
   let rubyBlock = '';
   if (jpSurname || jpName) {
-    rubyBlock += jpSurname ? `<ruby>${jpSurname}<rt>${jpSurnameFuri}</rt></ruby>` : '';
+    // 클래스는 HTML 불러오기 때 성/이름을 구분하기 위한 표시예요(스타일은 없음).
+    rubyBlock += jpSurname ? `<ruby class="wiki-jp-surname">${jpSurname}<rt>${jpSurnameFuri}</rt></ruby>` : '';
     rubyBlock += jpSurname && jpName ? ' ' : '';
-    rubyBlock += jpName ? `<ruby>${jpName}<rt>${jpNameFuri}</rt></ruby>` : '';
+    rubyBlock += jpName ? `<ruby class="wiki-jp-name">${jpName}<rt>${jpNameFuri}</rt></ruby>` : '';
   }
 
   let pipeName = '';
@@ -2195,13 +2196,18 @@ function parseWikiHTML(raw) {
     if (sub) {
         const rubies = Array.from(sub.querySelectorAll('ruby')).map(r => ({
             text: Array.from(r.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join(''),
-            furi: r.querySelector('rt')?.textContent || ''
+            furi: r.querySelector('rt')?.textContent || '',
+            kind: r.classList.contains('wiki-jp-surname') ? 'surname' : r.classList.contains('wiki-jp-name') ? 'name' : ''
         }));
-        if (rubies.length >= 2) {
-            data.jpSurname = rubies[0].text; data.jpSurnameFurigana = rubies[0].furi;
-            data.jpName = rubies[1].text; data.jpNameFurigana = rubies[1].furi;
+        const setSurname = r => { data.jpSurname = r.text; data.jpSurnameFurigana = r.furi; };
+        const setName = r => { data.jpName = r.text; data.jpNameFurigana = r.furi; };
+        if (rubies.some(r => r.kind)) {
+            rubies.forEach(r => (r.kind === 'surname' ? setSurname : setName)(r));
+        } else if (rubies.length >= 2) {
+            // 표시가 없는 예전 코드: 앞이 성, 뒤가 이름. 하나뿐이면 구분할 수 없어 이름으로 본다.
+            setSurname(rubies[0]); setName(rubies[1]);
         } else if (rubies.length === 1) {
-            data.jpName = rubies[0].text; data.jpNameFurigana = rubies[0].furi;
+            setName(rubies[0]);
         }
         const rest = sub.cloneNode(true);
         rest.querySelectorAll('ruby').forEach(r => r.remove());
