@@ -113,7 +113,7 @@
 
           <div class="input-group">
             <label class="field-label">캐릭터 이미지 URL</label>
-            <input id="imageUrl" placeholder="https://example.com/image.jpg" />
+            <input id="imageUrl" placeholder="https://example.com/image.jpg (비워 두면 티스토리에서 넣을 자리)" />
           </div>
 
           <div class="input-group">
@@ -302,6 +302,12 @@
           <i class="fa-solid fa-upload"></i> 불러오기
         </button>
         <input type="file" id="fileInput" accept=".json" onchange="loadData(event)" style="display:none;" />
+        <button onclick="openHtmlLoad()" class="btn-icon-text" title="생성기로 만든 HTML 코드를 붙여 넣어 불러와요">
+          <i class="fa-solid fa-file-code"></i> HTML 불러오기
+        </button>
+        <button onclick="openTistoryImport()" class="btn-icon-text" title="티스토리에 넣은 이미지를 생성기에 저장해요">
+          <i class="fa-solid fa-images"></i> 티스토리 이미지 가져오기
+        </button>
       </div>
     </div>
 
@@ -347,6 +353,26 @@
         <li>작업 내용은 <span class="keyword-highlight">저장</span> 버튼으로 JSON 파일로 보관하세요.</li>
       </ol>
     </div>
+    <div class="how-to-info">
+      <h5><i class="fa-solid fa-images fa-fw"></i> 내 기기의 이미지 넣기</h5>
+      <ol>
+        <li>이미지 URL 칸을 <span class="keyword-highlight">비워 두면</span> 코드에 <span class="keyword-highlight">[[이미지1]]</span>, <span class="keyword-highlight">[[이미지2]]</span>… 같은 자리표시가 생겨요. 미리보기에서는 점선 상자로 보여요.</li>
+        <li>티스토리 <span class="keyword-highlight">HTML 모드</span>에 코드를 붙여 넣고, 자리표시를 찾아(Ctrl+F) 지운 뒤 그 자리에 커서를 두고 <span class="keyword-highlight">사진 버튼</span>으로 기기의 이미지를 고르세요. 기본 모드로 전환하지 마세요.</li>
+        <li>모두 넣었으면 HTML 모드의 코드 <span class="keyword-highlight">전체를 복사</span>해서 <span class="keyword-highlight">HTML 불러오기</span>에 붙여 넣으세요. 작업 내용이 복원되면서 이미지 태그도 이미지 자리에 <span class="keyword-highlight">자동으로 연결</span>돼요. 저장 버튼의 JSON에도 함께 담겨요.</li>
+        <li>글을 고칠 때는 생성기에서 수정한 뒤 <span class="keyword-highlight">새로 만든 코드를 티스토리에 통째로 다시 붙여 넣으세요.</span> 이미 연결된 이미지는 그대로 들어가고, 새로 추가한 이미지 자리만 자리표시로 나와요. 그 자리만 채우고 다시 <span class="keyword-highlight">HTML 불러오기</span>를 하면 돼요.</li>
+        <li>JSON 저장 파일을 불러온 상태에서는 <span class="keyword-highlight">티스토리 이미지 가져오기</span>에 티스토리 코드를 붙여 넣어 태그만 가져올 수도 있어요.</li>
+        <li>이미지 URL 칸에 티스토리 이미지 태그(<span class="keyword-highlight">[##_Image|…_##]</span>)를 직접 붙여 넣어도 돼요.</li>
+      </ol>
+    </div>
+    <div class="how-to-tip">
+      <h5><i class="fa-solid fa-triangle-exclamation fa-fw"></i> 이미지 순서 주의</h5>
+      <ol>
+        <li>이미지를 <span class="keyword-highlight">추가·삭제·순서 변경</span>할 때는 반드시 <span class="keyword-highlight">생성기에서 먼저</span> 하고, 코드를 다시 만들어 티스토리에 붙여 넣으세요.</li>
+        <li>예) 이미지 A B C를 넣은 뒤 B와 C 사이에 D를 넣고 싶다면, 생성기에서 B와 C 사이에 이미지 자리를 추가 → 코드를 다시 만들어 티스토리에 통째로 붙여 넣기 → D 자리표시만 지우고 사진 넣기 → 가져오기. A B C는 그대로 유지돼요.</li>
+        <li>티스토리 코드에서만 이미지를 직접 끼워 넣거나 옮기면 생성기와 순서가 어긋나요. 이때는 개수가 다르면 가져오기가 막히고, 개수가 같아도 위치가 바뀔 수 있어요.</li>
+        <li>가져오기 전에 생성기의 이미지 자리를 바꾸지 마세요. 가져오기는 방금 티스토리에 붙여 넣은 코드와 같은 상태일 때만 정확해요.</li>
+      </ol>
+    </div>
     <div class="how-to-tip">
       <h5><i class="fa-solid fa-lightbulb fa-fw"></i> TIP</h5>
       <ol>
@@ -356,6 +382,40 @@
       </ol>
     </div>
     <button id="close-help">닫기</button>
+  </div>
+</div>
+
+<div id="tis-import-popup" class="hidden">
+  <div class="help-content">
+    <div class="help-header">
+      <h4>티스토리 이미지 가져오기</h4>
+    </div>
+    <div class="how-to-info">
+      <p class="tis-import-desc">티스토리 HTML 모드에서 사진을 넣은 뒤, 그 <b>코드 전체</b>를 복사해 아래에 붙여 넣으세요. 방금 붙여 넣은 코드와 같은 상태의 생성기에서만 정확해요.</p>
+      <textarea id="tis-import-text" rows="8" placeholder="티스토리 HTML 모드의 코드를 여기에 붙여 넣으세요"></textarea>
+      <div id="tis-import-msg" class="tis-import-msg"></div>
+    </div>
+    <div class="tis-import-actions">
+      <button type="button" class="btn-icon-text" onclick="closeTistoryImport()">닫기</button>
+      <button type="button" class="btn-copy" onclick="runTistoryImport()">가져오기</button>
+    </div>
+  </div>
+</div>
+
+<div id="html-load-popup" class="hidden">
+  <div class="help-content">
+    <div class="help-header">
+      <h4>HTML 코드로 불러오기</h4>
+    </div>
+    <div class="how-to-info">
+      <p class="tis-import-desc">생성기로 만든 코드를 붙여 넣으면 작업 내용을 복원해요. 티스토리 HTML 모드에서 사진을 넣은 코드라면 <b>이미지 태그도 자동으로 이미지 자리에 연결</b>돼요. 현재 작업 내용은 붙여 넣은 코드로 바뀌니, 필요하면 먼저 저장해 두세요.</p>
+      <textarea id="html-load-text" rows="8" placeholder="생성기로 만든 HTML 코드를 여기에 붙여 넣으세요"></textarea>
+      <div id="html-load-msg" class="tis-import-msg"></div>
+    </div>
+    <div class="tis-import-actions">
+      <button type="button" class="btn-icon-text" onclick="closeHtmlLoad()">닫기</button>
+      <button type="button" class="btn-copy" onclick="runHtmlLoad()">불러오기</button>
+    </div>
   </div>
 </div>
 

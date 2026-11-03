@@ -1198,6 +1198,57 @@ button {
 
 #close-help:hover { background: var(--primary-hover); }
 
+/* ── 티스토리 이미지 가져오기 팝업 ───────────── */
+#tis-import-popup,
+#html-load-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 1rem;
+}
+
+#tis-import-popup.hidden,
+#html-load-popup.hidden { display: none; }
+
+.tis-import-desc {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  margin-bottom: 10px;
+}
+
+#tis-import-text,
+#html-load-text {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  font-size: 0.78rem;
+  resize: vertical;
+}
+
+.tis-import-msg {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.tis-import-msg.ok { color: #1a7f37; }
+.tis-import-msg.err { color: #cf222e; }
+
+.tis-import-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 1.5rem 1.25rem;
+}
+
 /* ══════════════════════════════════════════════
    WIKI OUTPUT STYLES (preview + generated HTML)
    ══════════════════════════════════════════════ */
