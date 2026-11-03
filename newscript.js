@@ -227,78 +227,7 @@ function getFormattedTime() {
     return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
-// ── 티스토리 이미지 자리 ─────────────────────
-// 이미지 칸이 비어 있거나 티스토리 이미지 태그([##_Image|...##])가 들어 있으면
-// 그 자리는 "티스토리 이미지 자리"가 된다. 코드를 만들 때 자리마다 토큰을 심고,
-// 마지막에 문서 순서대로 번호를 매겨 [[이미지N]] 표시(또는 저장된 태그)로 바꾼다.
-const TIS_TOKEN_RE = /@@TISLOT:(\d+)@@/g;
-let tisSlotRegistry = [];
-let tisSlotsInOrder = [];
-
-function isTistoryTag(v) {
-    return /^\[##_Image\|[\s\S]*_##\]$/.test((v || '').trim());
-}
-
-function isBlankOrTag(v) {
-    const t = (v || '').trim();
-    return !t || isTistoryTag(t);
-}
-
-function escapeAttr(v) {
-    return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-}
-
-function tisPlaceholderSrc(hasTag) {
-    const label = hasTag ? '티스토리 이미지' : '이미지 자리';
-    const dash = hasTag ? '' : ' stroke-dasharray="8 6"';
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="160" viewBox="0 0 320 160"><rect x="2" y="2" width="316" height="156" rx="8" fill="#f3f3f3" stroke="#999" stroke-width="2"${dash}/><text x="160" y="86" font-family="sans-serif" font-size="16" fill="#777" text-anchor="middle">${label}</text></svg>`;
-    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-}
-
-function tisPreviewSrc(v) {
-    return isBlankOrTag(v) ? tisPlaceholderSrc(!!(v || '').trim()) : v;
-}
-
-function tisSlotToken(value, setter) {
-    tisSlotRegistry.push({ value: (value || '').trim(), set: setter });
-    return `@@TISLOT:${tisSlotRegistry.length - 1}@@`;
-}
-
-// 표 셀 안의 이미지 자리(<img data-tis-slot>)를 토큰으로 바꾼 셀 HTML을 돌려준다.
-function cellHTMLWithTisSlots(cell) {
-    if (!cell.querySelector('img[data-tis-slot]')) return cell.innerHTML;
-    const clone = cell.cloneNode(true);
-    const live = cell.querySelectorAll('img[data-tis-slot]');
-    clone.querySelectorAll('img[data-tis-slot]').forEach((img, i) => {
-        const target = live[i];
-        const token = tisSlotToken(img.dataset.tisTag || '', v => {
-            if (v) target.dataset.tisTag = v; else delete target.dataset.tisTag;
-            target.src = tisPlaceholderSrc(!!v);
-        });
-        img.replaceWith(document.createTextNode(token));
-    });
-    return clone.innerHTML;
-}
-
-function renderTisSlots(html, mode) {
-    const order = [];
-    const out = html.replace(TIS_TOKEN_RE, (m, id) => {
-        const slot = tisSlotRegistry[+id];
-        order.push(slot);
-        const n = order.length;
-        if (mode === 'output') return slot.value || `[[이미지${n}]]`;
-        const style = `border:2px ${slot.value ? 'solid' : 'dashed'} #999;border-radius:6px;padding:28px 12px;text-align:center;font-size:13px;line-height:1.5;color:#777;background:rgba(128,128,128,0.08);`;
-        const text = slot.value
-            ? `이미지 ${n} · 티스토리 이미지<br><small>(실제 이미지는 티스토리에서 보여요)</small>`
-            : `이미지 ${n} 자리<br><small>티스토리 HTML 모드에서 [[이미지${n}]]을 지우고 사진을 넣으세요</small>`;
-        return `<div style="${style}">${text}</div>`;
-    });
-    if (mode === 'output') tisSlotsInOrder = order;
-    return out;
-}
-
 function generateHTML() {
-  tisSlotRegistry = [];
   const color = document.getElementById("mainColorPicker").value;
   const nameTextColor = document.getElementById("nameTextColorPicker").value;
   const name = document.getElementById("charName").value.trim();
@@ -809,9 +738,7 @@ details[open] .wiki-h3-icon ion-icon {
         <tr>
           <td colspan="2" style="padding: 0; border: 2px solid var(--wiki-main-color); border-bottom: var(--wiki-border-color);">
             <div style="text-align: center;">
-              ${isBlankOrTag(imageUrl)
-                ? tisSlotToken(imageUrl, v => { document.getElementById("imageUrl").value = v; })
-                : `<img src="${imageUrl}" width="100%" style="display:block;" />`}
+              <img src="${imageUrl}" width="100%" style="display:block;" />
             </div>
           </td>
         </tr>
@@ -829,8 +756,8 @@ details[open] .wiki-h3-icon ion-icon {
     const processedData = processFootnotes(rawHTML);
     const fullHTML = processedData.html;
 
-    document.getElementById("output").value = renderTisSlots(fullHTML, 'output');
-    document.getElementById("preview").innerHTML = renderTisSlots(fullHTML, 'preview');
+    document.getElementById("output").value = fullHTML;
+    document.getElementById("preview").innerHTML = fullHTML; 
     
     updatePreviewColor(color);
 }
@@ -1399,7 +1326,7 @@ function updateMediaSrc(inputElement, mediaType) {
     const container = inputElement.closest('.editable-media');
     const mediaElement = container.querySelector(mediaType);
     if (mediaType === 'img') {
-        mediaElement.src = tisPreviewSrc(inputElement.value);
+        mediaElement.src = inputElement.value;
     } else if (mediaType === 'iframe') {
         const embedUrl = getYoutubeEmbedUrl(inputElement.value);
         if (embedUrl) {
@@ -1521,12 +1448,8 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
             break;
         }
         case 'image':
-            let imageUrl = data.url;
-            if (imageUrl === undefined) {
-                const input = prompt("이미지 URL 또는 티스토리 이미지 태그를 입력하세요.\n비워 두면 티스토리에서 나중에 이미지를 넣을 자리가 만들어져요.");
-                if (input === null) return;
-                imageUrl = input.trim();
-            }
+            const imageUrl = data.url || prompt("이미지 URL을 입력하세요:");
+            if (!imageUrl) return;
             const imgBorderColor = data.borderColor || mainColor;
             const imgHasDesc = data.hasDescription !== undefined ? data.hasDescription : true;
             const imgDescBg = data.descriptionBg || imgBorderColor;
@@ -1535,11 +1458,11 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
     <div class="block-drag-handle" title="드래그하여 이동"><i class="fa-solid fa-grip-vertical"></i></div><div class="editable-media">
         <table class="wiki-img-sing" style="margin: 0;">
             <tbody>
-                <tr><td style="border-color: ${imgBorderColor}; padding: 0;"><img src="${escapeAttr(tisPreviewSrc(imageUrl))}" alt="사용자 이미지" style="width: 100%; height: auto; display: block;"></td></tr>
+                <tr><td style="border-color: ${imgBorderColor}; padding: 0;"><img src="${imageUrl}" alt="사용자 이미지" style="width: 100%; height: auto; display: block;"></td></tr>
                 ${imgHasDesc ? `<tr><td class="media-description-cell" contenteditable="true" style="background-color: ${imgDescBg}; color: ${imgDescText}; border-color: ${imgBorderColor}; padding: 5px 10px; line-height: 1.5; text-align: center; word-wrap: break-word; white-space: normal; min-height: 20px; vertical-align: top;">${data.description || '이미지 설명을 입력하세요'}</td></tr>` : ''}
             </tbody>
         </table>
-        <input type="text" class="media-url" value="${escapeAttr(imageUrl)}" oninput="updateMediaSrc(this, 'img')" placeholder="이미지 URL (비워 두면 티스토리에서 넣을 자리)">
+        <input type="text" class="media-url" value="${imageUrl}" oninput="updateMediaSrc(this, 'img')" placeholder="Image URL">
         <div class="color-picker-wrapper" style="justify-content: center; margin-top: 10px;">
             <label class="color-display" title="테두리 색상 선택" style="background-color: ${imgBorderColor};"></label>
             <input type="color" class="media-border-color" value="${imgBorderColor}" 
@@ -1916,21 +1839,18 @@ function generateSingleBlockHTML(block) {
             return `<div class="wiki-toggle-wrap text1"><p><a class="wiki-toggle-btn" href="javascript:void(0)" onclick="(function(btn){var w=btn.closest('.wiki-toggle-wrap'); var b=w.querySelector('.wiki-toggle-body'); var isOpen=b.style.display!=='none'; b.style.display=isOpen?'none':'block'; btn.innerHTML=isOpen?btn.dataset.openLabel:btn.dataset.closeLabel;})(this)" data-open-label="${escapedOpenLabel}" data-close-label="${escapedCloseLabel}" style="${colorStyle} text-decoration: none !important; cursor: pointer; font-size: var(--wiki-font-size, 14px); -webkit-text-size-adjust: 100%; text-size-adjust: 100%;">${openLabel}</a></p><div class="wiki-toggle-body" style="display:none; padding-top:8px;">${nestedHTML}</div></div>\n`;
         }
         case 'image': {
-            const imgInput = block.querySelector('.media-url');
-            const imgSrc = imgInput?.value.trim() || '';
+            const imgSrc = block.querySelector('.media-url')?.value.trim() || '';
             const imgBorderColor = block.querySelector('.media-border-color')?.value || '#cccccc';
             const imgDescEnabled = block.querySelector('.desc-enabled')?.checked || false;
             const imgDescCell = block.querySelector('.media-description-cell');
             const imgDescription = imgDescCell ? imgDescCell.innerHTML.trim() : '';
             const imgDescBg = block.querySelector('.desc-bg-color')?.value || imgBorderColor;
             const imgDescTextColor = block.querySelector('.desc-text-color')?.value || '#ffffff';
-            const imgHTML = isBlankOrTag(imgSrc)
-                ? tisSlotToken(imgSrc, v => { imgInput.value = v; updateMediaSrc(imgInput, 'img'); })
-                : `<img src="${imgSrc}">`;
+            if (!imgSrc) return '';
             if (imgDescEnabled && imgDescription) {
-                return `<table class="wiki-img-sing"><tbody><tr><td style="border-color: ${imgBorderColor};">${imgHTML}</td></tr><tr><td style="background-color: ${imgDescBg}; color: ${imgDescTextColor}; border-color: ${imgBorderColor}; padding: 5px 10px; text-align: center; word-wrap: break-word; white-space: normal; vertical-align: top; line-height: 1.5;">${imgDescription}</td></tr></tbody></table>\n`;
+                return `<table class="wiki-img-sing"><tbody><tr><td style="border-color: ${imgBorderColor};"><img src="${imgSrc}"></td></tr><tr><td style="background-color: ${imgDescBg}; color: ${imgDescTextColor}; border-color: ${imgBorderColor}; padding: 5px 10px; text-align: center; word-wrap: break-word; white-space: normal; vertical-align: top; line-height: 1.5;">${imgDescription}</td></tr></tbody></table>\n`;
             } else {
-                return `<table class="wiki-img-sing"><tbody><tr><td style="border-color: ${imgBorderColor};">${imgHTML}</td></tr></tbody></table>\n`;
+                return `<table class="wiki-img-sing"><tbody><tr><td style="border-color: ${imgBorderColor};"><img src="${imgSrc}"></td></tr></tbody></table>\n`;
             }
         }
         case 'youtube': {
@@ -1975,7 +1895,7 @@ function generateSingleBlockHTML(block) {
                     const padding = '6px 10px';
                     const width = cell.style.width ? `width:${cell.style.width};` : '';
                     const height = cell.style.height ? `height:${cell.style.height};` : '';
-                    tableHTML += `<${tag}${rowspan}${colspan} style="border:1px solid ${border};${bg}padding:${padding};vertical-align:top;word-break:break-word;${width}${height}">${cellHTMLWithTisSlots(cell)}</${tag}>`;
+                    tableHTML += `<${tag}${rowspan}${colspan} style="border:1px solid ${border};${bg}padding:${padding};vertical-align:top;word-break:break-word;${width}${height}">${cell.innerHTML}</${tag}>`;
                 });
                 tableHTML += '</tr>';
             });
@@ -2073,60 +1993,9 @@ function generateIndexHTML() {
         </td></tr></tbody></table>`;
 }
 
-// ── 티스토리 이미지 가져오기 ───────────────────
-// 티스토리 HTML 모드의 코드에서 이미지 태그와 남아 있는 [[이미지N]] 표시를
-// 나오는 순서대로 뽑아, 생성기의 이미지 자리와 1:1로 맞춰 태그를 저장한다.
-function openTistoryImport() {
-    document.getElementById("tis-import-text").value = "";
-    const msg = document.getElementById("tis-import-msg");
-    msg.textContent = "";
-    msg.className = "tis-import-msg";
-    document.getElementById("tis-import-popup").classList.remove("hidden");
-}
-
-function closeTistoryImport() {
-    document.getElementById("tis-import-popup").classList.add("hidden");
-}
-
-function runTistoryImport() {
-    const msg = document.getElementById("tis-import-msg");
-    const text = document.getElementById("tis-import-text").value;
-    const show = (t, ok) => { msg.textContent = t; msg.className = "tis-import-msg " + (ok ? "ok" : "err"); };
-
-    generateHTML();
-    const slots = tisSlotsInOrder;
-    const items = text.match(/\[##_Image\|[\s\S]*?_##\]|\[\[이미지\d+\]\]/g) || [];
-
-    if (slots.length === 0) {
-        show("이 문서에는 티스토리에서 넣을 이미지 자리가 없어요.", false);
-        return;
-    }
-    if (items.length !== slots.length) {
-        show(`티스토리 코드의 이미지 태그·자리표시는 ${items.length}개인데, 생성기의 이미지 자리는 ${slots.length}개예요. 순서가 어긋날 수 있어 가져오지 않았어요. 이미지 자리를 추가·삭제·이동했다면 생성기에서 코드를 다시 만들어 티스토리에 붙여 넣었는지, 코드 전체를 복사했는지 확인해 주세요.`, false);
-        return;
-    }
-
-    let imported = 0, empty = 0;
-    items.forEach((item, i) => {
-        if (isTistoryTag(item)) {
-            slots[i].set(item);
-            imported++;
-        } else {
-            empty++;
-        }
-    });
-    generateHTML();
-    show(`이미지 태그 ${imported}개를 가져왔어요.` + (empty ? ` 아직 이미지를 넣지 않은 자리가 ${empty}개 있어요.` : ""), true);
-}
-
-document.getElementById("tis-import-popup").addEventListener("click", (e) => {
-    if (e.target === document.getElementById("tis-import-popup")) closeTistoryImport();
-});
-
 // ── HTML 코드로 불러오기 ───────────────────────
-// 생성기가 만든 코드(티스토리에 붙여 넣은 뒤 이미지 태그가 들어간 상태 포함)를
-// 다시 읽어 작업 내용을 복원한다. 코드의 이미지 태그·자리표시는 해당 이미지
-// 자리에 그대로 연결되므로 이미지 가져오기를 따로 할 필요가 없다.
+// 생성기가 만든 코드(티스토리에 붙여 넣었다가 복사한 코드 포함)를 다시 읽어
+// 작업 내용을 복원한다.
 function cssColorToHex(c, fallback) {
     const t = (c || '').trim();
     if (/^#[0-9a-f]{6}$/i.test(t)) return t.toLowerCase();
@@ -2137,13 +2006,7 @@ function cssColorToHex(c, fallback) {
 }
 
 function parseWikiHTML(raw) {
-    const tags = [];
-    let markers = 0;
-    const src = raw
-        .replace(/\[##_Image\|[\s\S]*?_##\]/g, m => { tags.push(m); return `@@TISTAG${tags.length - 1}@@`; })
-        .replace(/\[\[이미지\d+\]\]/g, () => { markers++; return '@@TISMARK@@'; });
-
-    const doc = new DOMParser().parseFromString(src, 'text/html');
+    const doc = new DOMParser().parseFromString(raw, 'text/html');
     const wrap = doc.getElementById('wikiwrap');
     if (!wrap) throw new Error('생성기로 만든 코드를 찾지 못했어요. 코드 전체(<div id="wikiwrap"> 부분 포함)를 붙여 넣었는지 확인해 주세요.');
     const mainTable = wrap.querySelector('.wiki-main-table');
@@ -2165,22 +2028,7 @@ function parseWikiHTML(raw) {
         a.replaceWith(doc.createTextNode(`@@TISFN${fnList.length - 1}@@`));
     });
     wrap.querySelectorAll('.wiki-footnote, script').forEach(el => el.remove());
-    // 이미지 자리가 아닌 곳(본문 글 속 등)에 남은 태그·자리표시는 글자 그대로 되돌린다.
-    const restoreFn = s => s
-        .replace(/@@TISFN(\d+)@@/g, (m, i) => fnList[+i])
-        .replace(/@@TISTAG(\d+)@@/g, (m, i) => tags[+i])
-        .replace(/@@TISMARK@@/g, '[[이미지]]');
-
-    // 이미지 자리: 태그면 그 값을, 자리표시면 빈 값을 돌려준다. 해당 없으면 null.
-    const slotValue = text => {
-        const t = text.trim();
-        const m = t.match(/^@@TISTAG(\d+)@@$/);
-        if (m) return tags[+m[1]];
-        return t === '@@TISMARK@@' ? '' : null;
-    };
-    const cellRestore = s => s
-        .replace(/@@TISTAG(\d+)@@/g, (m, i) => `<img data-tis-slot="1" data-tis-tag="${escapeAttr(tags[+i])}" src="${tisPlaceholderSrc(true)}" style="max-width:100%; height:auto; display:block; margin:auto;" />`)
-        .replace(/@@TISMARK@@/g, () => `<img data-tis-slot="1" src="${tisPlaceholderSrc(false)}" style="max-width:100%; height:auto; display:block; margin:auto;" />`);
+    const restoreFn = s => s.replace(/@@TISFN(\d+)@@/g, (m, i) => fnList[+i]);
 
     const data = { showDocTitle: false, docTitle: '', categories: [], fields: [], bodyContent: [] };
     const mainColor = colorVar('wiki-main-color');
@@ -2231,12 +2079,7 @@ function parseWikiHTML(raw) {
 
     // 대표 이미지, 출처, 상세 프로필
     const rows = Array.from(mainTable.querySelectorAll('tr'));
-    const imgTd = rows[1]?.querySelector('td');
-    data.imageUrl = '';
-    if (imgTd) {
-        const sv = slotValue(imgTd.textContent);
-        data.imageUrl = sv !== null ? sv : (imgTd.querySelector('img')?.getAttribute('src') || '');
-    }
+    data.imageUrl = rows[1]?.querySelector('td img')?.getAttribute('src') || '';
     data.copyright = mainTable.querySelector('.wt-copyright')?.textContent.trim() || '';
     rows.filter(tr => tr.querySelector('.wt-color')).forEach(tr => {
         data.fields.push({
@@ -2295,12 +2138,7 @@ function parseWikiHTML(raw) {
             const border = cssColorToHex(td?.style.borderColor, '#cccccc');
             const iframe = td?.querySelector('iframe');
             const item = { type: iframe ? 'youtube' : 'image', borderColor: border, hasDescription: false, description: '', descriptionBg: border, descriptionTextColor: '#ffffff' };
-            if (iframe) {
-                item.url = iframe.getAttribute('src') || '';
-            } else {
-                const sv = td ? slotValue(td.textContent) : null;
-                item.url = sv !== null ? sv : (td?.querySelector('img')?.getAttribute('src') || '');
-            }
+            item.url = iframe ? (iframe.getAttribute('src') || '') : (td?.querySelector('img')?.getAttribute('src') || '');
             const descTd = trs[1]?.querySelector('td');
             if (descTd) {
                 item.hasDescription = true;
@@ -2311,7 +2149,7 @@ function parseWikiHTML(raw) {
             out.push(item);
         } else if (el.tagName === 'TABLE' && cls.contains('wiki-table-scaled')) {
             const proxy = el.cloneNode(true);
-            proxy.querySelectorAll('td, th').forEach(c => { c.innerHTML = restoreFn(cellRestore(c.innerHTML)); });
+            proxy.querySelectorAll('td, th').forEach(c => { c.innerHTML = restoreFn(c.innerHTML); });
             const firstCell = el.querySelector('td, th');
             proxy.dataset.borderColor = cssColorToHex(firstCell?.style.borderColor, '#cccccc');
             proxy.dataset.outBorderColor = cssColorToHex(el.style.borderColor, proxy.dataset.borderColor);
@@ -2332,14 +2170,14 @@ function parseWikiHTML(raw) {
     }
     if (skipped) warnings.push(`알 수 없는 형식의 부분 ${skipped}개는 불러오지 못했어요.`);
 
-    return { data, warnings, tagCount: tags.length, markerCount: markers };
+    return { data, warnings };
 }
 
 function openHtmlLoad() {
     document.getElementById("html-load-text").value = "";
     const msg = document.getElementById("html-load-msg");
     msg.textContent = "";
-    msg.className = "tis-import-msg";
+    msg.className = "html-load-msg";
     document.getElementById("html-load-popup").classList.remove("hidden");
 }
 
@@ -2349,7 +2187,7 @@ function closeHtmlLoad() {
 
 function runHtmlLoad() {
     const msg = document.getElementById("html-load-msg");
-    const show = (t, ok) => { msg.textContent = t; msg.className = "tis-import-msg " + (ok ? "ok" : "err"); };
+    const show = (t, ok) => { msg.textContent = t; msg.className = "html-load-msg " + (ok ? "ok" : "err"); };
     const text = document.getElementById("html-load-text").value;
     if (!text.trim()) { show("불러올 코드를 붙여 넣어 주세요.", false); return; }
 
@@ -2364,14 +2202,7 @@ function runHtmlLoad() {
 
     applyLoadedData(parsed.data);
     generateHTML();
-
-    const linked = tisSlotsInOrder.filter(s => s.value).length;
-    const notes = [`코드를 불러왔어요. 이미지 태그 ${linked}개를 이미지 자리에 연결했고, 아직 이미지를 넣지 않은 자리가 ${tisSlotsInOrder.length - linked}개 있어요.`];
-    if (linked !== parsed.tagCount) {
-        notes.push(`참고: 이미지 태그 ${parsed.tagCount - linked}개는 이미지 자리가 아닌 곳(본문 글 속 등)에 있어서 연결하지 않고 글자 그대로 남겨 뒀어요.`);
-    }
-    notes.push(...parsed.warnings);
-    show(notes.join(" "), linked === parsed.tagCount && parsed.warnings.length === 0);
+    show(["코드를 불러왔어요.", ...parsed.warnings].join(" "), parsed.warnings.length === 0);
 }
 
 document.getElementById("html-load-popup").addEventListener("click", (e) => {
@@ -2785,12 +2616,9 @@ function tableInsertImage(btn) {
         alert('이미지를 넣을 셀을 먼저 선택해주세요.');
         return;
     }
-    const input = prompt('이미지 URL 또는 티스토리 이미지 태그를 입력하세요.\n비워 두면 티스토리에서 나중에 이미지를 넣을 자리가 만들어져요.');
-    if (input === null) return;
-    const url = input.trim();
-    const imgHTML = isBlankOrTag(url)
-        ? `<img data-tis-slot="1"${url ? ` data-tis-tag="${escapeAttr(url)}"` : ''} src="${tisPlaceholderSrc(!!url)}" style="max-width:100%; height:auto; display:block; margin:auto;" />`
-        : `<img src="${url}" style="max-width:100%; height:auto; display:block; margin:auto;" />`;
+    const url = prompt('이미지 URL을 입력하세요:');
+    if (!url) return;
+    const imgHTML = `<img src="${url}" style="max-width:100%; height:auto; display:block; margin:auto;" />`;
     selected[0].focus();
     document.execCommand('insertHTML', false, imgHTML);
     debouncedGenerateHTML();
@@ -3256,3 +3084,35 @@ document.addEventListener('DOMContentLoaded', () => {
         lastScrollTop = currentScrollTop;
     });
 });
+
+// ── 붙여넣기: 글씨 배경색 제거 ─────────────────
+// 복사한 글자에 딸려 오는 배경색(형광펜 포함)은 붙여 넣을 때 버린다.
+// 글자색·굵기 등 다른 서식은 그대로 두고, 스크립트가 될 수 있는 요소는 함께 걸러낸다.
+document.addEventListener('paste', (e) => {
+    const target = e.target instanceof Element ? e.target : null;
+    if (!target || !target.closest('[contenteditable="true"]')) return;
+    const html = e.clipboardData && e.clipboardData.getData('text/html');
+    if (!html) return;
+    e.preventDefault();
+
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('script, style, link, meta, iframe, object, embed').forEach(el => el.remove());
+    doc.querySelectorAll('mark').forEach(el => el.replaceWith(...el.childNodes));
+    doc.querySelectorAll('*').forEach(el => {
+        Array.from(el.attributes).forEach(a => {
+            if (/^on/i.test(a.name) || a.name === 'bgcolor' || /^\s*javascript:/i.test(a.value)) el.removeAttribute(a.name);
+        });
+        if (el.hasAttribute('style')) {
+            el.style.removeProperty('background');
+            el.style.removeProperty('background-color');
+            el.style.removeProperty('background-image');
+            if (!el.getAttribute('style').trim()) el.removeAttribute('style');
+        }
+    });
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_COMMENT);
+    const comments = [];
+    while (walker.nextNode()) comments.push(walker.currentNode);
+    comments.forEach(c => c.remove());
+
+    document.execCommand('insertHTML', false, doc.body.innerHTML);
+}, true);

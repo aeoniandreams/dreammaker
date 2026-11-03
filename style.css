@@ -1198,8 +1198,7 @@ button {
 
 #close-help:hover { background: var(--primary-hover); }
 
-/* ── 티스토리 이미지 가져오기 팝업 ───────────── */
-#tis-import-popup,
+/* ── HTML 불러오기 팝업 ─────────────────────── */
 #html-load-popup {
   position: fixed;
   inset: 0;
@@ -1212,16 +1211,14 @@ button {
   padding: 1rem;
 }
 
-#tis-import-popup.hidden,
 #html-load-popup.hidden { display: none; }
 
-.tis-import-desc {
+.html-load-desc {
   font-size: 0.85rem;
   line-height: 1.55;
   margin-bottom: 10px;
 }
 
-#tis-import-text,
 #html-load-text {
   width: 100%;
   box-sizing: border-box;
@@ -1233,16 +1230,16 @@ button {
   resize: vertical;
 }
 
-.tis-import-msg {
+.html-load-msg {
   margin-top: 10px;
   font-size: 0.82rem;
   line-height: 1.5;
 }
 
-.tis-import-msg.ok { color: #1a7f37; }
-.tis-import-msg.err { color: #cf222e; }
+.html-load-msg.ok { color: #1a7f37; }
+.html-load-msg.err { color: #cf222e; }
 
-.tis-import-actions {
+.html-load-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
