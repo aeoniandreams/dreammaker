@@ -345,76 +345,6 @@ input::placeholder { color: var(--text-3); }
   font-size: 0.7rem;
 }
 
-/* ── Field List (Profile Items) ────────────── */
-.field-list-wrapper {
-  padding: 0.75rem 1.25rem 1rem;
-}
-
-#field-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: default;
-  transition: border-color 0.15s;
-}
-
-.field-row:hover {
-  border-color: var(--border-strong);
-}
-
-.field-row input {
-  margin: 0 !important;
-  background: transparent;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  padding: 4px 6px;
-  font-size: 0.85rem;
-}
-
-.field-row input:focus {
-  border-color: var(--primary) !important;
-  background: var(--surface);
-  box-shadow: 0 0 0 2px var(--primary-ring) !important;
-  border-radius: 4px;
-}
-
-/* field-value as contenteditable div */
-.field-row .field-value[contenteditable] {
-  flex: 1;
-  margin: 0;
-  padding: 4px 6px;
-  font-size: 0.85rem;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  min-height: 1.6em;
-  background: transparent;
-  outline: none;
-  line-height: 1.5;
-  word-break: break-all;
-}
-
-.field-row .field-value[contenteditable]:focus {
-  border-color: var(--primary);
-  background: var(--surface);
-  box-shadow: 0 0 0 2px var(--primary-ring);
-}
-
-.field-row .field-value[data-placeholder]:empty::before {
-  content: attr(data-placeholder);
-  color: var(--text-3);
-  pointer-events: none;
-}
-
 /* ── Basic Info Toolbar ─────────────────────── */
 #basic-toolbar {
   display: flex;
@@ -426,48 +356,16 @@ input::placeholder { color: var(--text-3); }
   background: var(--surface-2);
 }
 
-.field-row .field-name {
-  flex: 0 0 100px;
-}
-
-.field-row .field-value {
-  flex: 1;
-}
-
-.drag-handle {
-  color: var(--text-3);
+.info-editor-hint {
+  margin: 0;
+  padding: 0.6rem 1.25rem 0.2rem;
   font-size: 0.8rem;
-  cursor: grab;
-  padding: 0 2px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
+  line-height: 1.5;
+  color: var(--text-3);
 }
 
-.drag-handle:active { cursor: grabbing; }
-
-.btn-add-field {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 8px;
-  padding: 8px;
-  background: transparent;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-sm);
-  color: var(--text-2);
-  font-size: 0.84rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-add-field:hover {
-  background: var(--primary-dim);
-  border-color: var(--primary);
-  color: var(--primary);
+#info-editor {
+  padding: 0.25rem 0 0.5rem;
 }
 
 /* ── Body Editor ────────────────────────────── */
@@ -1314,39 +1212,6 @@ button {
   margin: 20px 0 16px;
 }
 
-.wt-name {
-  padding: 5px 10px;
-  border: 2px solid var(--wiki-main-color);
-  text-align: center;
-  background-color: var(--wiki-main-color);
-  color: var(--wiki-text-color);
-}
-
-.wt-copyright {
-  padding: 5px 10px;
-  border: 1px solid var(--wiki-border-color);
-  text-align: center;
-  color: inherit !important;
-}
-
-.wt-color {
-  width: 30%;
-  padding: 5px 10px;
-  border: 1px solid var(--wiki-border-color);
-  text-align: center;
-  background-color: var(--wiki-main-color);
-  color: var(--wiki-text-color);
-}
-
-.wt-detail {
-  padding: 5px 10px;
-  border: 1px solid var(--wiki-border-color);
-  text-align: left;
-  color: inherit !important;
-}
-
-.wiki-main-table tr:last-child > td { border-bottom: none; }
-
 summary {
   list-style-type: none;
   opacity: 0.5;
@@ -1906,12 +1771,9 @@ details[open] .wiki-h3-icon ion-icon {
   .toolbar-button.has-text span { display: none; }
   .toolbar-button.has-text { width: auto; padding: 0 8px; }
 
-  .field-row .field-name {
-    flex: 0 0 80px;
-  }
 }
 
-.field-value .wiki-toggle-body {
+#info-editor .wiki-toggle-body {
   display: block !important;
   padding: 8px;
   margin-top: 5px;

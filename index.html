@@ -50,12 +50,6 @@
           <span>메인 테마 색상 선택</span>
           <i class="fa-solid fa-chevron-right fa-fw color-arrow"></i>
         </label>
-        <label class="color-picker-wrapper" for="nameTextColorPicker" style="margin-top: 8px;">
-          <div class="color-display"></div>
-          <input type="color" id="nameTextColorPicker" value="#ffffff" />
-          <span>이름 / 항목명 글자 색상</span>
-          <i class="fa-solid fa-chevron-right fa-fw color-arrow"></i>
-        </label>
       </section>
 
       <section class="section-block">
@@ -69,59 +63,17 @@
           </label>
           <div class="input-group">
             <label class="field-label">문서 제목</label>
-            <input id="docTitle" placeholder="문서 제목 입력 (미입력 시 캐릭터 이름 사용)" oninput="debouncedGenerateHTML()" />
+            <input id="docTitle" placeholder="문서 제목 입력 (미입력 시 정보 표 첫 칸의 첫 줄 사용)" oninput="debouncedGenerateHTML()" />
           </div>
         </div>
       </section>
 
       <section class="section-block">
         <h3 class="section-title">
-          <i class="fa-solid fa-user fa-fw"></i> 캐릭터 정보
+          <i class="fa-solid fa-tags fa-fw"></i> 분류
         </h3>
         <div class="input-fields">
           <div class="input-group">
-            <label class="field-label">캐릭터 이름 <span class="required">*</span></label>
-            <input id="charName" placeholder="한국어 이름 입력" />
-          </div>
-
-          <div class="input-row-pair">
-            <div class="input-group">
-              <label class="field-label">일본 성</label>
-              <input id="jpSurname" placeholder="성 (한자)" />
-            </div>
-            <div class="input-group">
-              <label class="field-label">성 후리가나</label>
-              <input id="jpSurnameFurigana" placeholder="ふりがな" />
-            </div>
-          </div>
-
-          <div class="input-row-pair">
-            <div class="input-group">
-              <label class="field-label">일본 이름</label>
-              <input id="jpName" placeholder="이름 (한자)" />
-            </div>
-            <div class="input-group">
-              <label class="field-label">이름 후리가나</label>
-              <input id="jpNameFurigana" placeholder="ふりがな" />
-            </div>
-          </div>
-
-          <div class="input-group">
-            <label class="field-label">영문 이름</label>
-            <input id="enName" placeholder="English Name" />
-          </div>
-
-          <div class="input-group">
-            <label class="field-label">캐릭터 이미지 URL</label>
-            <input id="imageUrl" placeholder="https://example.com/image.jpg" />
-          </div>
-
-          <div class="input-group">
-            <label class="field-label">이미지 출처 / 저작권</label>
-            <input id="copyright" placeholder="ⓒ 작가명 / 출처 표기" />
-          </div>
-
-          <div class="input-group" style="margin-top: 10px;">
             <label class="field-label" style="display: flex; justify-content: space-between;">
               <span>분류</span>
               <button type="button" onclick="addCategoryRow()" style="background: none; border: none; color: var(--primary); font-size: 0.8rem; cursor: pointer; font-weight: 600;">
@@ -141,8 +93,9 @@
 
       <section class="section-block">
         <h3 class="section-title">
-          <i class="fa-solid fa-list fa-fw"></i> 상세 프로필
+          <i class="fa-solid fa-user fa-fw"></i> 캐릭터 정보
         </h3>
+        <p class="info-editor-hint">표 안을 클릭해 내용을 직접 입력하세요. 표 모양은 아래 표 도구로 바꿀 수 있어요. (셀 여러 개 선택: Ctrl/Cmd + 클릭)</p>
 
         <div id="basic-toolbar">
           <div class="toolbar-group">
@@ -178,23 +131,19 @@
           </div>
           <div class="toolbar-divider"></div>
           <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicInsertWarn()" title="스포일러 주의"><i class="fa-solid fa-triangle-exclamation"></i></button>
             <button class="toolbar-button" onclick="basicAddToggle()" title="토글 블록"><i class="fa-solid fa-chevron-right"></i></button>
+            <button class="toolbar-button" onclick="basicInsertImage()" title="이미지 추가"><i class="fa-solid fa-image"></i></button>
+            <button class="toolbar-button" onclick="basicInsertYoutube()" title="유튜브"><i class="fa-brands fa-youtube"></i></button>
             <button class="toolbar-button" onclick="basicInsertFootnote()" title="각주 추가"><i class="fa-solid fa-asterisk"></i></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button has-text" onclick="applyRuby()" title="윗주: 글자를 드래그한 뒤 누르고, 글자 위에 올릴 내용을 입력하세요"><i class="fa-solid fa-language"></i><span>윗주</span></button>
           </div>
         </div>
 
-        <div class="field-list-wrapper">
-          <div id="field-list">
-            <div class="field-row">
-              <div class="drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
-              <div class="field-name" contenteditable="true" data-placeholder="항목명"></div>
-              <div class="field-value" contenteditable="true" data-placeholder="내용"></div>
-            </div>
-          </div>
-          <button onclick="addField()" class="btn-add-field">
-            <i class="fa-solid fa-plus"></i> 항목 추가
-          </button>
-        </div>
+        <div id="info-editor"></div>
       </section>
 
     </div>
@@ -341,8 +290,8 @@
     <div class="how-to-info">
       <h5><i class="fa-solid fa-circle-info fa-fw"></i> 기본 사용법</h5>
       <ol>
-        <li>각 입력란에 캐릭터 정보를 입력하세요.</li>
-        <li><span class="keyword-highlight">항목 추가</span>로 원하는 만큼 줄을 추가할 수 있어요.</li>
+        <li><span class="keyword-highlight">캐릭터 정보</span> 표를 클릭해 내용을 직접 입력하세요. 처음에는 2칸 x 10줄 기본 틀이 들어 있고, 행·열 추가, 셀 합치기, 배경색 같은 <span class="keyword-highlight">표 도구</span>로 캐릭터마다 다른 모양으로 바꿀 수 있어요.</li>
+        <li><span class="keyword-highlight">윗주</span>: 글자를 드래그한 뒤 윗주 버튼을 누르고 내용을 입력하면 그 글자 위에 작게 표시돼요(후리가나 등).</li>
         <li>주석은 <span class="keyword-highlight">{{주석 내용}}</span>을 넣으면 자동으로 완성됩니다.
         <br><span class="keyword-highlight">{{[스포일러]|주석내용}}</span>으로 텍스트 주석을 넣을 수 있어요!</li>
         <li>우측 미리보기는 입력 시 자동 갱신됩니다. 수동 갱신은 <span class="keyword-highlight">코드 갱신</span>을 누르세요.</li>

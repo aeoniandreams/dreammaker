@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     initializeResizer();
     initializeBodyEditor();
     initializeBasicToolbar();
+    buildInfoEditor();
     generateHTML();
 
     const dropdown = document.querySelector('.dropdown');
@@ -72,27 +73,14 @@ function initializeColorPicker() {
     colorPicker.addEventListener("input", (e) => {
         colorDisplay.style.backgroundColor = e.target.value;
         updatePreviewColor(e.target.value);
+        // 정보 표의 바깥 테두리를 따로 정하지 않았다면 테마 색상을 따라간다.
+        const infoTable = document.querySelector('#info-editor .editable-table');
+        if (infoTable && !infoTable.dataset.outBorderColor) {
+            infoTable.style.border = `2px solid ${e.target.value}`;
+            const outInput = infoTable.closest('.editable-table-wrap').querySelector('.tbl-all-border');
+            if (outInput) outInput.value = e.target.value;
+        }
         debouncedGenerateHTML();
-    });
-
-    const nameTextColorPicker = document.getElementById("nameTextColorPicker");
-    const nameTextColorDisplay = nameTextColorPicker.closest('label').querySelector(".color-display");
-
-    nameTextColorDisplay.style.backgroundColor = nameTextColorPicker.value;
-    updatePreviewNameTextColor(nameTextColorPicker.value);
-
-    nameTextColorPicker.addEventListener("input", (e) => {
-        nameTextColorDisplay.style.backgroundColor = e.target.value;
-        updatePreviewNameTextColor(e.target.value);
-        debouncedGenerateHTML();
-    });
-}
-
-function updatePreviewNameTextColor(color) {
-    const previewElement = document.getElementById("preview");
-    if (!previewElement) return;
-    previewElement.querySelectorAll('.wt-name, .wt-color').forEach(element => {
-        element.style.setProperty('color', color, 'important');
     });
 }
 
@@ -103,23 +91,7 @@ function updatePreviewColor(color) {
         if (wikiWrap) {
             wikiWrap.style.setProperty('--wiki-main-color', color, 'important');
         }
-        
-        const mainTable = previewElement.querySelector('.wiki-main-table');
-        if (mainTable) {
-            mainTable.style.setProperty('border-color', color, 'important');
-        }
-        
-        const wtNameElements = previewElement.querySelectorAll('.wt-name');
-        wtNameElements.forEach(element => {
-            element.style.setProperty('background-color', color, 'important');
-            element.style.setProperty('border-color', color, 'important');
-        });
 
-        const wtColorElements = previewElement.querySelectorAll('.wt-color');
-        wtColorElements.forEach(element => {
-            element.style.setProperty('background-color', color, 'important');
-        });
-        
         const quotes = previewElement.querySelectorAll('.wiki-quote td');
         quotes.forEach(element => {
              element.style.borderLeftColor = color;
@@ -202,25 +174,6 @@ function insertFootnote() {
     alert("각주를 넣을 입력창이나 에디터를 먼저 클릭해주세요.");
 }
 
-new Sortable(document.getElementById("field-list"), {
-  animation: 150,
-  handle: ".drag-handle",
-  onEnd: debouncedGenerateHTML
-});
-
-function addField() {
-  const list = document.getElementById("field-list");
-  const row = document.createElement("div");
-  row.className = "field-row";
-  row.innerHTML = `
-    <div class="drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
-    <div class="field-name" contenteditable="true" data-placeholder="항목명"></div>
-    <div class="field-value" contenteditable="true" data-placeholder="내용"></div>
-  `;
-  list.appendChild(row);
-  debouncedGenerateHTML();
-}
-
 function getFormattedTime() {
     const now = new Date();
     const pad = n => n.toString().padStart(2, '0');
@@ -229,19 +182,10 @@ function getFormattedTime() {
 
 function generateHTML() {
   const color = document.getElementById("mainColorPicker").value;
-  const nameTextColor = document.getElementById("nameTextColorPicker").value;
-  const name = document.getElementById("charName").value.trim();
-  const jpSurname = document.getElementById("jpSurname").value.trim();
-  const jpSurnameFuri = document.getElementById("jpSurnameFurigana").value.trim();
-  const jpName = document.getElementById("jpName").value.trim();
-  const jpNameFuri = document.getElementById("jpNameFurigana").value.trim();
-  const enName = document.getElementById("enName").value.trim();
-  const imageUrl = document.getElementById("imageUrl").value.trim();
-  const copyright = document.getElementById("copyright").value.trim();
 
   const showDocTitle = document.getElementById("showDocTitle")?.checked;
   const docTitleInput = document.getElementById("docTitle")?.value.trim();
-  const finalTitle = docTitleInput || name;
+  const finalTitle = docTitleInput || infoFallbackTitle();
 
   let titleTimeHTML = "";
   if (showDocTitle && finalTitle) {
@@ -251,32 +195,7 @@ function generateHTML() {
         <p style="font-size: .9rem; margin: .5rem 0 0; color: inherit; opacity: 0.7;">최근 수정 시각: <time>${getFormattedTime()}</time></p>
       </div>`;
   }
-  let rubyBlock = '';
-  if (jpSurname || jpName) {
-    // 클래스는 HTML 불러오기 때 성/이름을 구분하기 위한 표시예요(스타일은 없음).
-    rubyBlock += jpSurname ? `<ruby class="wiki-jp-surname">${jpSurname}<rt>${jpSurnameFuri}</rt></ruby>` : '';
-    rubyBlock += jpSurname && jpName ? ' ' : '';
-    rubyBlock += jpName ? `<ruby class="wiki-jp-name">${jpName}<rt>${jpNameFuri}</rt></ruby>` : '';
-  }
-
-  let pipeName = '';
-  if ((jpSurname || jpName) && enName) {
-    pipeName = ` ｜ ${enName}`;
-  } else if (!jpSurname && !jpName && enName) {
-    pipeName = `${enName}`;
-  }
-
-  const rows = document.querySelectorAll(".field-row");
-  let detailRows = '';
-  rows.forEach(row => {
-    const nameEl = row.querySelector(".field-name");
-    const field = nameEl ? (nameEl.tagName === 'INPUT' ? nameEl.value.trim() : nameEl.innerHTML.trim()) : '';
-    const valueEl = row.querySelector(".field-value");
-    const value = valueEl ? (valueEl.tagName === 'INPUT' ? valueEl.value.trim() : valueEl.innerHTML.trim()) : '';
-    if (field && value) {
-      detailRows += `<tr><td class="wt-color">${field}</td><td class="wt-detail">${value}</td></tr>\n`;
-    }
-  });
+  const infoTableHTML = generateInfoTableHTML();
 
   const catRows = document.querySelectorAll("#category-list .category-row");
   let categoryItems = [];
@@ -307,7 +226,6 @@ let rawHTML = `
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp.min.css");
 :root {
     --wiki-main-color: ${color};
-    --wiki-text-color: ${nameTextColor};
     --wiki-link-color: #0275d8;
     --wiki-border-color: #ddd;
     --wiki-bg-gray: #eee;
@@ -400,44 +318,6 @@ let rawHTML = `
     font-size: 0.96em;
     line-height: var(--wiki-line-height);
     margin: 20px 0 16px;
-}
-
-.wt-name {
-    padding: 5px 10px;
-    border: 2px solid var(--wiki-main-color);
-    text-align: center;
-    background-color: var(--wiki-main-color);
-    color: var(--wiki-text-color);
-}
-
-.wt-copyright {
-    padding: 5px 10px;
-    border: 1px solid var(--wiki-border-color);
-    text-align: center;
-    color: inherit !important;
-}
-
-.wt-color {
-    width: 30%;
-    padding: 5px 10px;
-    border: 1px solid var(--wiki-border-color);
-    border-right: 1px solid var(--wiki-border-color);
-    border-bottom: 1px solid var(--wiki-border-color);
-    text-align: center;
-    background-color: var(--wiki-main-color);
-    color: var(--wiki-text-color);
-}
-
-.wt-detail {
-    padding: 5px 10px;
-    border: 1px solid var(--wiki-border-color);
-    border-bottom: 1px solid var(--wiki-border-color);
-    text-align: left;
-    color: inherit !important;
-}
-
-.wiki-main-table tr:last-child > td {
-    border-bottom: none;
 }
 
 summary {
@@ -727,25 +607,7 @@ details[open] .wiki-h3-icon ion-icon {
   ${categoryHTML}
   
   <div class="wiki-container">
-    <table class="wiki-main-table">
-      <tbody>
-        <tr>
-          <td class="wt-name" colspan="2">
-            <b><span style="font-size: 20px;">${name}</span></b><br />
-            <b><span style="font-size: 13px; line-height: 180%;">${rubyBlock}${pipeName}</span></b>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2" style="padding: 0; border: 2px solid var(--wiki-main-color); border-bottom: var(--wiki-border-color);">
-            <div style="text-align: center;">
-              <img src="${imageUrl}" width="100%" style="display:block;" />
-            </div>
-          </td>
-        </tr>
-        ${copyright ? `<tr><td class="wt-copyright" colspan="2">${copyright}</td></tr>` : ''}
-        ${detailRows}
-      </tbody>
-    </table>
+    ${infoTableHTML}
     ${indexHTML}
   </div>
   ${bodyHTML}
@@ -987,7 +849,7 @@ function initializeBasicToolbar() {
     const basicToolbar = document.getElementById('basic-toolbar');
     if (!basicToolbar) return;
 
-    const fieldList = document.getElementById('field-list');
+    const infoEditor = document.getElementById('info-editor');
 
     basicToolbar.addEventListener('mousedown', (e) => {
         const target = e.target.closest('button, label');
@@ -1000,7 +862,7 @@ function initializeBasicToolbar() {
         const sel = window.getSelection();
         if (!sel || sel.rangeCount === 0) return;
         const range = sel.getRangeAt(0);
-        if (fieldList && fieldList.contains(range.commonAncestorContainer)) {
+        if (infoEditor && infoEditor.contains(range.commonAncestorContainer)) {
             basicSavedRange = range.cloneRange();
             updateFontSizeInputDisplay(range, 'basic');
         }
@@ -1059,7 +921,7 @@ function basicExec(cmd) {
         restoreBasicRange();
     }
     document.execCommand(cmd);
-    stripAutoInjectedFontSize(document.getElementById('field-list'));
+    stripAutoInjectedFontSize(document.getElementById('info-editor'));
     saveBasicRange();
     debouncedGenerateHTML();
 }
@@ -1147,7 +1009,7 @@ function applyFontSizeToSelection(newSize, scope, rangeRef) {
     document.execCommand('styleWithCSS', false, false);
     document.execCommand('fontSize', false, '7');
 
-    const scopeEl = isBasic ? document.getElementById('field-list') : document.getElementById('editor-container');
+    const scopeEl = isBasic ? document.getElementById('info-editor') : document.getElementById('editor-container');
     const newSpans = [];
     if (scopeEl) {
         scopeEl.querySelectorAll('font[size="7"]').forEach(f => {
@@ -1244,6 +1106,140 @@ function basicInsertFootnote() {
 
     if (basicSavedRange) restoreBasicRange();
     document.execCommand('insertText', false, formattedText);
+    debouncedGenerateHTML();
+}
+
+// ── 캐릭터 정보 표 ─────────────────────────────
+// 기본정보 탭의 정보 표는 본문의 표 블록과 같은 편집기를 쓴다. 레이아웃과 내용을 모두 직접 편집한다.
+const INFO_BORDER_COLOR = '#dddddd';
+const INFO_GRAY = '#eeeeee';
+
+// 기본 템플릿: 2칸 x 10줄. 1~2줄은 한 칸으로 합쳐지고, 3줄부터 3:7로 나뉘며,
+// 합쳐진 칸과 3줄부터의 왼쪽 칸은 옅은 회색이다.
+function defaultInfoTableData() {
+    const cell = extra => Object.assign({ content: '', bg: '', border: INFO_BORDER_COLOR, rowspan: 1, colspan: 1, isHeader: false, width: '', height: '' }, extra);
+    const cells = [];
+    for (let r = 0; r < 10; r++) {
+        cells.push(r < 2 ? [cell({ colspan: 2, bg: INFO_GRAY }), { hidden: true }] : [cell({ bg: INFO_GRAY }), cell({})]);
+    }
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: '', bgColor: '#ffffff', widthPercent: 100, colWidths: ['30%', '70%'], cells, rows: 10, cols: 2 };
+}
+
+// 예전 저장 파일/코드(이름·이미지·상세 프로필 입력칸 방식)를 같은 모양의 표로 옮긴다.
+function legacyToInfoTable(d) {
+    const main = d.mainColor || '#8d27ae';
+    const txt = d.nameTextColor || '#ffffff';
+    let ruby = '';
+    if (d.jpSurname || d.jpName) {
+        ruby += d.jpSurname ? `<ruby>${d.jpSurname}<rt>${d.jpSurnameFurigana || ''}</rt></ruby>` : '';
+        ruby += d.jpSurname && d.jpName ? ' ' : '';
+        ruby += d.jpName ? `<ruby>${d.jpName}<rt>${d.jpNameFurigana || ''}</rt></ruby>` : '';
+    }
+    let pipe = '';
+    if ((d.jpSurname || d.jpName) && d.enName) pipe = ` ｜ ${d.enName}`;
+    else if (!d.jpSurname && !d.jpName && d.enName) pipe = d.enName;
+
+    const center = (html, color) => `<div style="text-align: center;${color ? ` color: ${color};` : ''}">${html}</div>`;
+    const base = { border: INFO_BORDER_COLOR, rowspan: 1, colspan: 1, isHeader: false, width: '', height: '' };
+    const rows = [];
+    rows.push([Object.assign({}, base, { colspan: 2, bg: main, content: center(`<b><span style="font-size: 20px;">${d.charName || ''}</span></b><br><b><span style="font-size: 13px;">${ruby}${pipe}</span></b>`, txt) }), { hidden: true }]);
+    rows.push([Object.assign({}, base, { colspan: 2, content: d.imageUrl ? `<img src="${d.imageUrl}" style="max-width:100%; height:auto; display:block; margin:auto;">` : '' }), { hidden: true }]);
+    if (d.copyright) rows.push([Object.assign({}, base, { colspan: 2, content: center(d.copyright) }), { hidden: true }]);
+    (d.fields || []).forEach(f => {
+        if (f.name && f.value) rows.push([Object.assign({}, base, { bg: main, content: center(f.name, txt) }), Object.assign({}, base, { content: f.value })]);
+    });
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: main, bgColor: '#ffffff', widthPercent: 100, colWidths: ['30%', '70%'], cells: rows, rows: rows.length, cols: 2 };
+}
+
+function buildInfoEditor(infoData) {
+    const host = document.getElementById('info-editor');
+    const d = infoData && infoData.cells ? infoData : defaultInfoTableData();
+    host.innerHTML = buildTableWrapHTML(d, d.rows || d.cells.length, d.cols || 2, { info: true });
+    initTableBlock(host);
+    basicSavedRange = null;
+}
+
+// 문서 제목을 비워 뒀을 때 쓰는 이름: 정보 표 첫 칸의 첫 줄(윗주 제외).
+function infoFallbackTitle() {
+    const cell = document.querySelector('#info-editor .editable-table td, #info-editor .editable-table th');
+    return cell ? firstLineText(cell.innerHTML) : '';
+}
+
+function firstLineText(html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    tmp.querySelectorAll('rt, script, style').forEach(n => n.remove());
+    tmp.querySelectorAll('br, div, p').forEach(n => n.before('\n'));
+    return tmp.textContent.replace(/\u00a0/g, ' ').split('\n').map(s => s.trim()).find(Boolean) || '';
+}
+
+function generateInfoTableHTML() {
+    const tbl = document.querySelector('#info-editor .editable-table');
+    if (!tbl) return '';
+    const outer = tbl.dataset.outBorderColor ? ` border: 2px solid ${tbl.dataset.outBorderColor};` : '';
+    return tableOutputHTML(tbl, `<table class="wiki-main-table" style="table-layout: fixed;${outer}">`);
+}
+
+// 정보 표 상단바: 캐럿 위치(또는 선택한 글)에 넣는 기능들
+function infoNeedCaret() {
+    if (basicSavedRange) return true;
+    alert('넣을 칸을 먼저 클릭해주세요.');
+    return false;
+}
+
+function basicInsertWarn() {
+    if (!infoNeedCaret()) return;
+    // 표 안에 표를 만들면 표 편집이 꼬이므로, 스포일러 주의 상자는 <div>로 넣는다.
+    const html = `<div class="text1" style="border: 1px solid gray; border-top: 5px solid orange; padding: 12px; margin: 4px 0;"><span style="font-size: 1.3em;">이 문서에</span> <a style="color: #0275d8; font-size: 1.3em;" href="https://namu.wiki/w/%EC%8A%A4%ED%8F%AC%EC%9D%BC%EB%9F%AC" target="_blank" rel="noopener">스포일러</a><span style="font-size: 1.3em;">가 포함되어 있습니다.</span><br><br>이 문서가 설명하는 작품이나 인물 등에 대한 줄거리, 결말, 반전 요소 등을 직·간접적으로 포함하고 있습니다.</div><br>`;
+    restoreBasicRange();
+    document.execCommand('insertHTML', false, html);
+    saveBasicRange();
+    debouncedGenerateHTML();
+}
+
+function basicInsertImage() {
+    if (!infoNeedCaret()) return;
+    const url = prompt('이미지 URL을 입력하세요:');
+    if (!url) return;
+    restoreBasicRange();
+    document.execCommand('insertHTML', false, `<img src="${url}" style="max-width:100%; height:auto; display:block; margin:auto;" />`);
+    saveBasicRange();
+    debouncedGenerateHTML();
+}
+
+function basicInsertYoutube() {
+    if (!infoNeedCaret()) return;
+    const url = prompt('유튜브 ID 또는 주소를 입력하세요:');
+    if (!url) return;
+    const embedUrl = getYoutubeEmbedUrl(url);
+    if (!embedUrl) {
+        alert('유효하지 않은 유튜브 주소입니다.');
+        return;
+    }
+    restoreBasicRange();
+    document.execCommand('insertHTML', false, `<iframe src="${embedUrl}" style="max-width:100%; aspect-ratio:16/9; display:block; margin:auto;" frameborder="0" allowfullscreen="true"></iframe><br>`);
+    saveBasicRange();
+    debouncedGenerateHTML();
+}
+
+// 윗주: 드래그해 둔 글자 위에 작은 글씨를 올린다(<ruby>).
+function applyRuby() {
+    if (!basicSavedRange || basicSavedRange.collapsed) {
+        alert('윗주를 달 글자를 먼저 선택(드래그)해주세요.');
+        return;
+    }
+    const rt = prompt('윗주로 표시할 내용을 입력하세요:', '');
+    if (!rt) return;
+    restoreBasicRange();
+    const range = window.getSelection().getRangeAt(0);
+    const tmp = document.createElement('div');
+    tmp.appendChild(range.cloneContents());
+    // 이미 윗주가 달린 글자를 다시 선택했다면 이전 윗주는 걷어낸다.
+    tmp.querySelectorAll('rt').forEach(n => n.remove());
+    tmp.querySelectorAll('ruby').forEach(n => n.replaceWith(...n.childNodes));
+    const safeRt = rt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    document.execCommand('insertHTML', false, `<ruby>${tmp.innerHTML}<rt>${safeRt}</rt></ruby>`);
+    saveBasicRange();
     debouncedGenerateHTML();
 }
 
@@ -1353,6 +1349,95 @@ function resolveContainerChildBlock(startEl, container) {
         node = node.parentElement;
     }
     return (node && node.parentElement === container) ? node : null;
+}
+
+// 표 편집기(툴바 + 표) HTML. 본문의 표 블록과 캐릭터 정보 표가 함께 쓴다.
+// opts.info: 캐릭터 정보 표용 — 이미지/유튜브/토글 버튼(상단바에 있음)과 표 너비 입력을 빼고,
+// 바깥 테두리색을 따로 지정하지 않았다면 테마 색상을 따르게 둔다.
+function buildTableWrapHTML(data, rows, cols, opts = {}) {
+    const info = !!opts.info;
+    const tblBorderColor = data.borderColor || '#cccccc';
+    const tblOutBorderColor = data.outBorderColor || (info ? document.getElementById("mainColorPicker").value : tblBorderColor);
+    const outBorderAttr = (!info || data.outBorderColor) ? ` data-out-border-color="${tblOutBorderColor}"` : '';
+    const tblBgColor = data.bgColor || '#ffffff';
+    const tblWidthPercent = data.widthPercent || 100;
+    const tblColWidths = data.colWidths || [];
+    let colgroupHTML = '<colgroup>';
+    for (let c = 0; c < cols; c++) {
+        colgroupHTML += tblColWidths[c] ? `<col style="width:${tblColWidths[c]};">` : '<col>';
+    }
+    colgroupHTML += '</colgroup>';
+    let cellsHTML = '';
+    for (let r = 0; r < rows; r++) {
+        cellsHTML += '<tr>';
+        for (let c = 0; c < cols; c++) {
+            const cellData = (data.cells && data.cells[r] && data.cells[r][c]) || {};
+            const rowspan = cellData.rowspan || 1;
+            const colspan = cellData.colspan || 1;
+            const cellBg = cellData.bg || '';
+            const cellBorder = cellData.border || tblBorderColor;
+            const cellContent = cellData.content || '';
+            const isHeader = cellData.isHeader || false;
+            const tag = isHeader ? 'th' : 'td';
+            const bgAttr = cellBg ? `background-color:${cellBg};` : '';
+            const widthAttr = cellData.width ? `width:${cellData.width};` : '';
+            const heightAttr = cellData.height ? `height:${cellData.height};` : '';
+            if (!cellData.hidden) {
+                const rsAttr = rowspan > 1 ? ` rowspan="${rowspan}"` : '';
+                const csAttr = colspan > 1 ? ` colspan="${colspan}"` : '';
+                cellsHTML += `<${tag}${rsAttr}${csAttr} contenteditable="true" style="border:1px solid ${cellBorder};${bgAttr}padding:6px 10px;min-width:60px;min-height:28px;vertical-align:top;word-break:break-word;${widthAttr}${heightAttr}">${cellContent}</${tag}>`;
+            }
+        }
+        cellsHTML += '</tr>';
+    }
+    const insertButtons = info ? '' : `
+            <span class="tbl-sep"></span>
+            <button class="tbl-btn" onclick="tableInsertImage(this)" title="셀에 이미지 추가"><i class="fa-solid fa-image"></i></button>
+            <button class="tbl-btn" onclick="tableInsertYoutube(this)" title="셀에 유튜브 추가"><i class="fa-brands fa-youtube"></i></button>
+            <button class="tbl-btn" onclick="tableInsertToggle(this)" title="셀에 토글 블록 추가"><i class="fa-solid fa-chevron-right"></i></button>`;
+    const widthInput = info ? '' : `
+            <span class="tbl-sep"></span>
+            <label class="tbl-color-label" title="표 너비 (데스크탑 기준 %, 모바일에서는 항상 100%)">
+                <i class="fa-solid fa-arrows-left-right"></i>
+                <input type="number" class="tbl-width-input" min="10" max="100" step="1" value="${tblWidthPercent}" onchange="tableSetWidthPercent(this)">%
+            </label>`;
+    return `<div class="editable-table-wrap">
+        <div class="table-toolbar">
+            <button class="tbl-btn" onclick="tableAddRow(this)" title="행 추가"><i class="fa-solid fa-plus"></i> 행</button>
+            <button class="tbl-btn" onclick="tableAddCol(this)" title="열 추가"><i class="fa-solid fa-plus"></i> 열</button>
+            <button class="tbl-btn tbl-btn-danger" onclick="tableDelRow(this)" title="행 삭제"><i class="fa-solid fa-minus"></i> 행</button>
+            <button class="tbl-btn tbl-btn-danger" onclick="tableDelCol(this)" title="열 삭제"><i class="fa-solid fa-minus"></i> 열</button>
+            <span class="tbl-sep"></span>
+            <button class="tbl-btn" onclick="tableMergeCells(this)" title="셀 합치기"><i class="fa-solid fa-object-group"></i></button>
+            <button class="tbl-btn" onclick="tableSplitCell(this)" title="셀 나누기"><i class="fa-solid fa-object-ungroup"></i></button>
+            <span class="tbl-sep"></span>
+            <label class="tbl-color-label" title="선택 셀 배경색">
+                <i class="fa-solid fa-fill-drip"></i>
+                <input type="color" class="tbl-cell-bg" value="${tblBgColor}" onchange="tableCellBg(this)">
+            </label>
+            <label class="tbl-color-label" title="선택 셀 테두리색 (투명 = #000000에서 opacity 0 불가, 투명하려면 아래 투명 버튼 사용)">
+                <i class="fa-solid fa-border-all"></i>
+                <input type="color" class="tbl-cell-border" value="${tblBorderColor}" onchange="tableCellBorderColor(this)">
+                <button type="button" class="tbl-transparent-btn" onclick="event.preventDefault();event.stopPropagation();tableCellBorderNoneFromLabel(this)" title="투명">T</button>
+            </label>
+            <label class="tbl-color-label" title="표 전체(바깥) 테두리색">
+                <i class="fa-solid fa-table"></i>
+                <input type="color" class="tbl-all-border" value="${tblOutBorderColor}" onchange="tableOuterBorder(this)">
+            </label>${insertButtons}${widthInput}
+            <span class="tbl-sep"></span>
+            <label class="tbl-color-label" title="선택한 셀이 속한 열의 너비 (%, 표 자체 너비 기준)">
+                <i class="fa-solid fa-ruler-horizontal"></i>
+                <input type="number" class="tbl-colwidth-input" min="1" max="100" step="1" placeholder="열 너비%" onchange="tableSetColumnWidth(this)">%
+            </label>
+            <span class="tbl-cell-info"></span>
+        </div>
+        <div class="table-scroll-wrap">
+            <table class="editable-table" data-border-color="${tblBorderColor}" data-bg-color="${tblBgColor}"${outBorderAttr} data-width-pct="${tblWidthPercent}" style="border-collapse:collapse;width:100%;border:2px solid ${tblOutBorderColor};">
+                ${colgroupHTML}
+                <tbody>${cellsHTML}</tbody>
+            </table>
+        </div>
+    </div>`;
 }
 
 function addBlock(type, data = {}, targetContainer = null, forceAppend = false) {
@@ -1545,87 +1630,9 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
                 if (!r || !c || isNaN(r) || isNaN(c)) return;
                 rows = r; cols = c;
             }
-            const tblBorderColor = data.borderColor || '#cccccc';
-            const tblOutBorderColor = data.outBorderColor || tblBorderColor;
-            const tblBgColor = data.bgColor || '#ffffff';
-            const tblWidthPercent = data.widthPercent || 100;
-            const tblColWidths = data.colWidths || [];
-            let colgroupHTML = '<colgroup>';
-            for (let c = 0; c < cols; c++) {
-                colgroupHTML += tblColWidths[c] ? `<col style="width:${tblColWidths[c]};">` : '<col>';
-            }
-            colgroupHTML += '</colgroup>';
-            let cellsHTML = '';
-            for (let r = 0; r < rows; r++) {
-                cellsHTML += '<tr>';
-                for (let c = 0; c < cols; c++) {
-                    const cellData = (data.cells && data.cells[r] && data.cells[r][c]) || {};
-                    const rowspan = cellData.rowspan || 1;
-                    const colspan = cellData.colspan || 1;
-                    const cellBg = cellData.bg || '';
-                    const cellBorder = cellData.border || tblBorderColor;
-                    const cellContent = cellData.content || '';
-                    const isHeader = cellData.isHeader || false;
-                    const tag = isHeader ? 'th' : 'td';
-                    const bgAttr = cellBg ? `background-color:${cellBg};` : '';
-                    const widthAttr = cellData.width ? `width:${cellData.width};` : '';
-                    const heightAttr = cellData.height ? `height:${cellData.height};` : '';
-                    if (!cellData.hidden) {
-                        const rsAttr = rowspan > 1 ? ` rowspan="${rowspan}"` : '';
-                        const csAttr = colspan > 1 ? ` colspan="${colspan}"` : '';
-                        cellsHTML += `<${tag}${rsAttr}${csAttr} contenteditable="true" style="border:1px solid ${cellBorder};${bgAttr}padding:6px 10px;min-width:60px;min-height:28px;vertical-align:top;word-break:break-word;${widthAttr}${heightAttr}">${cellContent}</${tag}>`;
-                    }
-                }
-                cellsHTML += '</tr>';
-            }
             contentHTML = `
     <div class="block-drag-handle" title="드래그하여 이동"><i class="fa-solid fa-grip-vertical"></i></div>
-    <div class="editable-table-wrap">
-        <div class="table-toolbar">
-            <button class="tbl-btn" onclick="tableAddRow(this)" title="행 추가"><i class="fa-solid fa-plus"></i> 행</button>
-            <button class="tbl-btn" onclick="tableAddCol(this)" title="열 추가"><i class="fa-solid fa-plus"></i> 열</button>
-            <button class="tbl-btn tbl-btn-danger" onclick="tableDelRow(this)" title="행 삭제"><i class="fa-solid fa-minus"></i> 행</button>
-            <button class="tbl-btn tbl-btn-danger" onclick="tableDelCol(this)" title="열 삭제"><i class="fa-solid fa-minus"></i> 열</button>
-            <span class="tbl-sep"></span>
-            <button class="tbl-btn" onclick="tableMergeCells(this)" title="셀 합치기"><i class="fa-solid fa-object-group"></i></button>
-            <button class="tbl-btn" onclick="tableSplitCell(this)" title="셀 나누기"><i class="fa-solid fa-object-ungroup"></i></button>
-            <span class="tbl-sep"></span>
-            <label class="tbl-color-label" title="선택 셀 배경색">
-                <i class="fa-solid fa-fill-drip"></i>
-                <input type="color" class="tbl-cell-bg" value="${tblBgColor}" onchange="tableCellBg(this)">
-            </label>
-            <label class="tbl-color-label" title="선택 셀 테두리색 (투명 = #000000에서 opacity 0 불가, 투명하려면 아래 투명 버튼 사용)">
-                <i class="fa-solid fa-border-all"></i>
-                <input type="color" class="tbl-cell-border" value="${tblBorderColor}" onchange="tableCellBorderColor(this)">
-                <button type="button" class="tbl-transparent-btn" onclick="event.preventDefault();event.stopPropagation();tableCellBorderNoneFromLabel(this)" title="투명">T</button>
-            </label>
-            <label class="tbl-color-label" title="표 전체(바깥) 테두리색">
-                <i class="fa-solid fa-table"></i>
-                <input type="color" class="tbl-all-border" value="${tblOutBorderColor}" onchange="tableOuterBorder(this)">
-            </label>
-            <span class="tbl-sep"></span>
-            <button class="tbl-btn" onclick="tableInsertImage(this)" title="셀에 이미지 추가"><i class="fa-solid fa-image"></i></button>
-            <button class="tbl-btn" onclick="tableInsertYoutube(this)" title="셀에 유튜브 추가"><i class="fa-brands fa-youtube"></i></button>
-            <button class="tbl-btn" onclick="tableInsertToggle(this)" title="셀에 토글 블록 추가"><i class="fa-solid fa-chevron-right"></i></button>
-            <span class="tbl-sep"></span>
-            <label class="tbl-color-label" title="표 너비 (데스크탑 기준 %, 모바일에서는 항상 100%)">
-                <i class="fa-solid fa-arrows-left-right"></i>
-                <input type="number" class="tbl-width-input" min="10" max="100" step="1" value="${tblWidthPercent}" onchange="tableSetWidthPercent(this)">%
-            </label>
-            <span class="tbl-sep"></span>
-            <label class="tbl-color-label" title="선택한 셀이 속한 열의 너비 (%, 표 자체 너비 기준)">
-                <i class="fa-solid fa-ruler-horizontal"></i>
-                <input type="number" class="tbl-colwidth-input" min="1" max="100" step="1" placeholder="열 너비%" onchange="tableSetColumnWidth(this)">%
-            </label>
-            <span class="tbl-cell-info"></span>
-        </div>
-        <div class="table-scroll-wrap">
-            <table class="editable-table" data-border-color="${tblBorderColor}" data-bg-color="${tblBgColor}" data-out-border-color="${tblOutBorderColor}" data-width-pct="${tblWidthPercent}" style="border-collapse:collapse;width:100%;border:2px solid ${tblOutBorderColor};">
-                ${colgroupHTML}
-                <tbody>${cellsHTML}</tbody>
-            </table>
-        </div>
-    </div>`;
+    ${buildTableWrapHTML(data, rows, cols)}`;
             break;
         }
             break;
@@ -1792,6 +1799,35 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
     debouncedGenerateHTML();
 }
 
+// 편집 중인 표(.editable-table)를 출력용 <table>로 바꾼다. 여는 태그는 호출하는 쪽이 정한다.
+function tableOutputHTML(tbl, openTag) {
+    let tableHTML = openTag;
+    const colgroupEl = tbl.querySelector('colgroup');
+    if (colgroupEl) {
+        tableHTML += '<colgroup>';
+        Array.from(colgroupEl.children).forEach(col => {
+            tableHTML += col.style.width ? `<col style="width:${col.style.width};">` : '<col>';
+        });
+        tableHTML += '</colgroup>';
+    }
+    tbl.querySelectorAll('tr').forEach(row => {
+        tableHTML += '<tr>';
+        row.querySelectorAll('td, th').forEach(cell => {
+            const tag = cell.tagName.toLowerCase();
+            const rowspan = cell.getAttribute('rowspan') > 1 ? ` rowspan="${cell.getAttribute('rowspan')}"` : '';
+            const colspan = cell.getAttribute('colspan') > 1 ? ` colspan="${cell.getAttribute('colspan')}"` : '';
+            const bg = cell.style.backgroundColor ? `background-color:${cell.style.backgroundColor};` : '';
+            const border = cell.style.borderColor || '#cccccc';
+            const padding = '6px 10px';
+            const width = cell.style.width ? `width:${cell.style.width};` : '';
+            const height = cell.style.height ? `height:${cell.style.height};` : '';
+            tableHTML += `<${tag}${rowspan}${colspan} style="border:1px solid ${border};${bg}padding:${padding};vertical-align:top;word-break:break-word;${width}${height}">${cell.innerHTML}</${tag}>`;
+        });
+        tableHTML += '</tr>';
+    });
+    return tableHTML + '</table>';
+}
+
 function generateSingleBlockHTML(block) {
     const type = block.dataset.type;
     switch (type) {
@@ -1874,33 +1910,7 @@ function generateSingleBlockHTML(block) {
             if (!tbl) return '';
             const outBorderColor = tbl.dataset.outBorderColor || tbl.dataset.borderColor || '#cccccc';
             const widthPct = parseInt(tbl.dataset.widthPct) || 100;
-            const rows = tbl.querySelectorAll('tr');
-            let tableHTML = `<table class="wiki-table-scaled" style="--table-width-pct: ${widthPct}%; border-collapse:collapse;table-layout:fixed;margin:1em 0; border: 2px solid ${outBorderColor};">`;
-            const colgroupEl = tbl.querySelector('colgroup');
-            if (colgroupEl) {
-                tableHTML += '<colgroup>';
-                Array.from(colgroupEl.children).forEach(col => {
-                    tableHTML += col.style.width ? `<col style="width:${col.style.width};">` : '<col>';
-                });
-                tableHTML += '</colgroup>';
-            }
-            rows.forEach(row => {
-                tableHTML += '<tr>';
-                row.querySelectorAll('td, th').forEach(cell => {
-                    const tag = cell.tagName.toLowerCase();
-                    const rowspan = cell.getAttribute('rowspan') > 1 ? ` rowspan="${cell.getAttribute('rowspan')}"` : '';
-                    const colspan = cell.getAttribute('colspan') > 1 ? ` colspan="${cell.getAttribute('colspan')}"` : '';
-                    const bg = cell.style.backgroundColor ? `background-color:${cell.style.backgroundColor};` : '';
-                    const border = cell.style.borderColor || '#cccccc';
-                    const padding = '6px 10px';
-                    const width = cell.style.width ? `width:${cell.style.width};` : '';
-                    const height = cell.style.height ? `height:${cell.style.height};` : '';
-                    tableHTML += `<${tag}${rowspan}${colspan} style="border:1px solid ${border};${bg}padding:${padding};vertical-align:top;word-break:break-word;${width}${height}">${cell.innerHTML}</${tag}>`;
-                });
-                tableHTML += '</tr>';
-            });
-            tableHTML += '</table>';
-            return tableHTML + '\n';
+            return tableOutputHTML(tbl, `<table class="wiki-table-scaled" style="--table-width-pct: ${widthPct}%; border-collapse:collapse;table-layout:fixed;margin:1em 0; border: 2px solid ${outBorderColor};">`) + '\n';
         }
         default:
             return '';
@@ -2036,11 +2046,29 @@ function parseWikiHTML(raw) {
     if (mainColor) data.mainColor = mainColor; else warnings.push('색상 정보(<style>)가 없어 테마 색상은 현재 값을 그대로 뒀어요.');
     if (textColor) data.nameTextColor = textColor;
 
-    // 이름
-    const bolds = mainTable.querySelectorAll('.wt-name b');
-    data.charName = bolds[0]?.textContent.trim() || '';
+    // 정보 표: 직접 편집하는 표(현재 형식)와, 이름·이미지·상세 프로필 입력칸으로 만든 예전 형식을 구분한다.
+    const legacy = !!mainTable.querySelector('.wt-name');
+    let fallbackTitle = '';
+    if (!legacy) {
+        const proxy = mainTable.cloneNode(true);
+        proxy.querySelectorAll('td, th').forEach(c => { c.innerHTML = restoreFn(c.innerHTML); });
+        const outInline = /(?:^|;)\s*border:\s*2px solid\s*([^;]+)/.exec(mainTable.getAttribute('style') || '');
+        proxy.dataset.borderColor = cssColorToHex(mainTable.querySelector('td, th')?.style.borderColor, INFO_BORDER_COLOR);
+        proxy.dataset.outBorderColor = outInline ? cssColorToHex(outInline[1], '') : '';
+        proxy.dataset.bgColor = '#ffffff';
+        proxy.dataset.widthPct = '100';
+        data.infoTable = Object.assign(serializeTableForSave(proxy), { outBorderColor: proxy.dataset.outBorderColor });
+        fallbackTitle = firstLineText(proxy.querySelector('td, th')?.innerHTML || '');
+    }
+
+    // 이름 (예전 형식)
+    const bolds = legacy ? mainTable.querySelectorAll('.wt-name b') : [];
+    if (legacy) {
+        data.charName = bolds[0]?.textContent.trim() || '';
+        fallbackTitle = data.charName;
+        data.jpSurname = data.jpSurnameFurigana = data.jpName = data.jpNameFurigana = data.enName = '';
+    }
     const sub = bolds[1]?.querySelector('span');
-    data.jpSurname = data.jpSurnameFurigana = data.jpName = data.jpNameFurigana = data.enName = '';
     if (sub) {
         const rubies = Array.from(sub.querySelectorAll('ruby')).map(r => ({
             text: Array.from(r.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join(''),
@@ -2068,7 +2096,7 @@ function parseWikiHTML(raw) {
     if (h1) {
         data.showDocTitle = true;
         const title = h1.textContent.trim();
-        data.docTitle = title === data.charName ? '' : title;
+        data.docTitle = title === fallbackTitle ? '' : title;
     }
 
     // 분류
@@ -2077,16 +2105,18 @@ function parseWikiHTML(raw) {
         data.categories.push({ text: el.textContent.trim(), link: el.tagName === 'A' ? (el.getAttribute('href') || '') : '' });
     });
 
-    // 대표 이미지, 출처, 상세 프로필
-    const rows = Array.from(mainTable.querySelectorAll('tr'));
-    data.imageUrl = rows[1]?.querySelector('td img')?.getAttribute('src') || '';
-    data.copyright = mainTable.querySelector('.wt-copyright')?.textContent.trim() || '';
-    rows.filter(tr => tr.querySelector('.wt-color')).forEach(tr => {
-        data.fields.push({
-            name: restoreFn(tr.querySelector('.wt-color').innerHTML.trim()),
-            value: restoreFn(tr.querySelector('.wt-detail')?.innerHTML.trim() || '')
+    // 대표 이미지, 출처, 상세 프로필 (예전 형식)
+    if (legacy) {
+        const rows = Array.from(mainTable.querySelectorAll('tr'));
+        data.imageUrl = rows[1]?.querySelector('td img')?.getAttribute('src') || '';
+        data.copyright = mainTable.querySelector('.wt-copyright')?.textContent.trim() || '';
+        rows.filter(tr => tr.querySelector('.wt-color')).forEach(tr => {
+            data.fields.push({
+                name: restoreFn(tr.querySelector('.wt-color').innerHTML.trim()),
+                value: restoreFn(tr.querySelector('.wt-detail')?.innerHTML.trim() || '')
+            });
         });
-    });
+    }
 
     // 본문
     let skipped = 0;
@@ -2852,24 +2882,16 @@ function serializeTableForSave(tbl) {
 function saveData() {
   const data = {
     mainColor: document.getElementById("mainColorPicker").value,
-    nameTextColor: document.getElementById("nameTextColorPicker").value,
     showDocTitle: document.getElementById("showDocTitle")?.checked ?? true,
     docTitle: document.getElementById("docTitle")?.value || "",
-    charName: document.getElementById("charName").value,
-    jpSurname: document.getElementById("jpSurname").value,
-    jpSurnameFurigana: document.getElementById("jpSurnameFurigana").value,
-    jpName: document.getElementById("jpName").value,
-    jpNameFurigana: document.getElementById("jpNameFurigana").value,
-    enName: document.getElementById("enName").value,
-    imageUrl: document.getElementById("imageUrl").value,
-    copyright: document.getElementById("copyright").value,
+    infoTable: (() => {
+        const tbl = document.querySelector('#info-editor .editable-table');
+        // 바깥 테두리를 따로 정하지 않았다면 빈 값으로 남겨, 불러온 뒤에도 테마 색상을 따라가게 한다.
+        return tbl ? Object.assign(serializeTableForSave(tbl), { outBorderColor: tbl.dataset.outBorderColor || '' }) : null;
+    })(),
     categories: Array.from(document.querySelectorAll("#category-list .category-row")).map(row => ({
         text: row.querySelector(".cat-text").value,
         link: row.querySelector(".cat-link").value
-    })),
-    fields: Array.from(document.querySelectorAll(".field-row")).map(row => ({
-      name: (() => { const n = row.querySelector(".field-name"); return n ? (n.tagName === 'INPUT' ? n.value : n.innerHTML) : ''; })(),
-      value: (() => { const v = row.querySelector(".field-value"); return v ? (v.tagName === 'INPUT' ? v.value : v.innerHTML) : ''; })()
     })),
     bodyContent: Array.from(document.querySelectorAll("#editor-container > .editable-block")).map(block => {
         const type = block.dataset.type;
@@ -2964,7 +2986,7 @@ function saveData() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  const charName = document.getElementById("charName").value.trim() || "profile";
+  const charName = (document.getElementById("docTitle")?.value.trim() || infoFallbackTitle()).replace(/[\\/:*?"<>|]/g, '').trim() || "profile";
   a.href = url;
   a.download = `${charName}_data.json`;
   a.click();
@@ -2993,12 +3015,6 @@ function applyLoadedData(data) {
       mainColorPicker.closest('label').querySelector('.color-display').style.backgroundColor = data.mainColor;
     }
 
-    if (data.nameTextColor) {
-      const nameTextColorPicker = document.getElementById("nameTextColorPicker");
-      nameTextColorPicker.value = data.nameTextColor;
-      nameTextColorPicker.closest('label').querySelector('.color-display').style.backgroundColor = data.nameTextColor;
-    }
-
     if (data.showDocTitle !== undefined) {
         const checkbox = document.getElementById("showDocTitle");
         if(checkbox) checkbox.checked = data.showDocTitle;
@@ -3007,14 +3023,9 @@ function applyLoadedData(data) {
     const docTitleInput = document.getElementById("docTitle");
     if(docTitleInput) docTitleInput.value = data.docTitle || "";
 
-    document.getElementById("charName").value = data.charName || "";
-    document.getElementById("jpSurname").value = data.jpSurname || "";
-    document.getElementById("jpSurnameFurigana").value = data.jpSurnameFurigana || "";
-    document.getElementById("jpName").value = data.jpName || "";
-    document.getElementById("jpNameFurigana").value = data.jpNameFurigana || "";
-    document.getElementById("enName").value = data.enName || "";
-    document.getElementById("imageUrl").value = data.imageUrl || "";
-    document.getElementById("copyright").value = data.copyright || "";
+    // 정보 표: 새 형식이면 그대로, 예전 형식(이름/이미지/상세 프로필 입력칸)이면 표로 옮겨서 복원한다.
+    const isLegacy = !data.infoTable && ['charName', 'imageUrl', 'copyright', 'fields', 'enName', 'jpName', 'jpSurname'].some(k => k in data);
+    buildInfoEditor(data.infoTable || (isLegacy ? legacyToInfoTable(data) : null));
 
     const catList = document.getElementById("category-list");
     if(catList) {
@@ -3027,19 +3038,6 @@ function applyLoadedData(data) {
             addCategoryRow(); 
         }
     }
-
-    const fieldList = document.getElementById("field-list");
-    fieldList.innerHTML = "";
-    (data.fields || []).forEach(item => {
-      const row = document.createElement("div");
-      row.className = "field-row";
-      row.innerHTML = `
-        <div class="drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
-        <div class="field-name" contenteditable="true" data-placeholder="항목명">${item.name || ''}</div>
-        <div class="field-value" contenteditable="true" data-placeholder="내용">${item.value || ''}</div>
-      `;
-      fieldList.appendChild(row);
-    });
 
     const editorContainer = document.getElementById("editor-container");
     editorContainer.innerHTML = "";
