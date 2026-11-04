@@ -439,11 +439,19 @@ details[open] .wiki-h3-icon ion-icon {
     color: #666;
     float: left;
     font-weight: 400;
-    line-height: 1em;
+    line-height: 1em !important;
     text-align: center;
     width: 0.9em;
     margin-right: 0.4em;
     margin-top: 0.2em;
+}
+
+/* 제목 왼쪽 화살표의 세로 위치는 제목 줄 간격과 아이콘 정렬에 좌우되므로,
+   블로그 스킨이 바꾸지 못하도록 고정한다. */
+.wiki-h1-icon ion-icon,
+.wiki-h2-icon ion-icon,
+.wiki-h3-icon ion-icon {
+    vertical-align: baseline !important;
 }
 
 .wiki-index {
@@ -1966,7 +1974,7 @@ function generateBodyHTML() {
             const headingClass = `wiki-h${level}`;
             const iconClass = `wiki-h${level}-icon`;
 
-            bodyHTML += `<details open><summary class="text1"><h2 class="${headingClass}"><span style="float: right; color: var(--wiki-link-color); font-size: 0.85rem; margin-top: 0.2em; cursor: pointer; text-decoration: none !important;">[편집]</span><span class="${iconClass}"><ion-icon name="chevron-down-outline"></ion-icon></span> <a name="${anchor}"></a><a href="#목차">${indexText}</a> ${textHTML}</h2></summary>\n`;
+            bodyHTML += `<details open><summary class="text1"><h2 class="${headingClass}" style="line-height: 1.5 !important;"><span style="float: right; color: var(--wiki-link-color); font-size: 0.85rem; margin-top: 0.2em; cursor: pointer; text-decoration: none !important;">[편집]</span><span class="${iconClass}"><ion-icon name="chevron-down-outline"></ion-icon></span> <a name="${anchor}"></a><a href="#목차">${indexText}</a> ${textHTML}</h2></summary>\n`;
             openDetails = true;
         } else {
             bodyHTML += generateSingleBlockHTML(block);
