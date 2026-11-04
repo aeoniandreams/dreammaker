@@ -1379,7 +1379,7 @@ function buildTableWrapHTML(data, rows, cols, opts = {}) {
             if (!cellData.hidden) {
                 const rsAttr = rowspan > 1 ? ` rowspan="${rowspan}"` : '';
                 const csAttr = colspan > 1 ? ` colspan="${colspan}"` : '';
-                cellsHTML += `<${tag}${rsAttr}${csAttr} contenteditable="true" style="border:1px solid ${cellBorder};${bgAttr}padding:6px 10px;min-width:60px;min-height:28px;vertical-align:top;word-break:break-word;${widthAttr}${heightAttr}">${cellContent}</${tag}>`;
+                cellsHTML += `<${tag}${rsAttr}${csAttr} contenteditable="true" style="border:1px solid ${cellBorder};${bgAttr}padding:6px 10px;min-width:60px;min-height:28px;vertical-align:middle;word-break:break-word;${widthAttr}${heightAttr}">${cellContent}</${tag}>`;
             }
         }
         cellsHTML += '</tr>';
@@ -1815,7 +1815,7 @@ function tableOutputHTML(tbl, openTag) {
             const padding = '6px 10px';
             const width = cell.style.width ? `width:${cell.style.width};` : '';
             const height = cell.style.height ? `height:${cell.style.height};` : '';
-            tableHTML += `<${tag}${rowspan}${colspan} style="border:1px solid ${border};${bg}padding:${padding};vertical-align:top;word-break:break-word;${width}${height}">${cell.innerHTML}</${tag}>`;
+            tableHTML += `<${tag}${rowspan}${colspan} style="border:1px solid ${border};${bg}padding:${padding};vertical-align:middle;word-break:break-word;${width}${height}">${cell.innerHTML}</${tag}>`;
         });
         tableHTML += '</tr>';
     });
@@ -2276,7 +2276,7 @@ function tableAddRow(btn) {
         td.style.border = `1px solid ${borderColor}`;
         td.style.padding = '6px 10px';
         td.style.minWidth = '60px';
-        td.style.verticalAlign = 'top';
+        td.style.verticalAlign = 'middle';
         td.style.wordBreak = 'break-word';
         newRow.appendChild(td);
     }
@@ -2308,7 +2308,7 @@ function tableAddCol(btn) {
         td.style.border = `1px solid ${borderColor}`;
         td.style.padding = '6px 10px';
         td.style.minWidth = '60px';
-        td.style.verticalAlign = 'top';
+        td.style.verticalAlign = 'middle';
         td.style.wordBreak = 'break-word';
 
         const cellsInRow = Array.from(row.querySelectorAll('td, th'));

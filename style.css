@@ -1712,7 +1712,7 @@ details[open] .wiki-h3-icon ion-icon {
   padding: 6px 10px;
   min-width: 60px;
   min-height: 28px;
-  vertical-align: top;
+  vertical-align: middle;
   word-break: break-word;
   outline: none;
   font-size: 0.9em;
@@ -1728,6 +1728,9 @@ details[open] .wiki-h3-icon ion-icon {
 
 .editable-table td:focus,
 .editable-table th:focus {
+  /* 편집 중인 칸: 색은 그대로 두고 테두리선만 보이게 한다(모서리도 각지게). */
+  background: none;
+  border-radius: 0;
   box-shadow: inset 0 0 0 2px var(--primary);
   position: relative;
   z-index: 1;
@@ -1741,9 +1744,11 @@ details[open] .wiki-h3-icon ion-icon {
 
 .editable-table td.tbl-selected,
 .editable-table th.tbl-selected {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
-  background-color: var(--primary-dim) !important;
+  /* 선택된 칸: 배경색은 바꾸지 않고 테두리선만 그린다. */
+  border-radius: 0;
+  box-shadow: inset 0 0 0 2px var(--primary);
+  position: relative;
+  z-index: 1;
 }
 
 /* ══════════════════════════════════════════════
