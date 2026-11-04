@@ -251,6 +251,9 @@
           <i class="fa-solid fa-upload"></i> 불러오기
         </button>
         <input type="file" id="fileInput" accept=".json" onchange="loadData(event)" style="display:none;" />
+        <button onclick="openWorks()" class="btn-icon-text" title="이 브라우저에 여러 작업을 저장하고 골라서 불러와요">
+          <i class="fa-solid fa-folder-open"></i> 내 작업
+        </button>
         <button onclick="openHtmlLoad()" class="btn-icon-text" title="생성기로 만든 HTML 코드를 붙여 넣어 불러와요">
           <i class="fa-solid fa-file-code"></i> HTML 불러오기
         </button>
@@ -297,6 +300,7 @@
         <li>우측 미리보기는 입력 시 자동 갱신됩니다. 수동 갱신은 <span class="keyword-highlight">코드 갱신</span>을 누르세요.</li>
         <li>티스토리 글쓰기 → 기본모드 → <span class="keyword-highlight">HTML 모드</span>에서 코드를 붙여 넣으면 끝!</li>
         <li>작업 내용은 <span class="keyword-highlight">저장</span> 버튼으로 JSON 파일로 보관하세요.</li>
+        <li><span class="keyword-highlight">내 작업</span>에서는 이름을 붙여 이 브라우저에 여러 작업을 저장하고 골라서 불러올 수 있어요. 다른 기기와는 공유되지 않아요.</li>
         <li>JSON 파일이 없어도 이미 만든 코드를 <span class="keyword-highlight">HTML 불러오기</span>에 붙여 넣으면 작업 내용을 되살릴 수 있어요.</li>
       </ol>
     </div>
@@ -309,6 +313,26 @@
       </ol>
     </div>
     <button id="close-help">닫기</button>
+  </div>
+</div>
+
+<div id="works-popup" class="hidden">
+  <div class="help-content">
+    <div class="help-header">
+      <h4>내 작업</h4>
+    </div>
+    <div class="how-to-info">
+      <p class="html-load-desc">작업을 이름을 붙여 이 브라우저에 저장해 두고, 목록에서 골라 불러올 수 있어요. 다른 기기와는 공유되지 않고, 브라우저 데이터를 지우면 사라지니 중요한 작업은 <b>저장</b> 버튼으로 JSON 파일에도 백업해 두세요.</p>
+      <div class="works-save-row">
+        <input id="works-name" placeholder="작업 이름" />
+        <button type="button" class="btn-copy" onclick="saveCurrentWork()">현재 작업 저장</button>
+      </div>
+      <div id="works-msg" class="works-msg"></div>
+      <div id="works-list"></div>
+    </div>
+    <div class="html-load-actions">
+      <button type="button" class="btn-icon-text" onclick="closeWorks()">닫기</button>
+    </div>
   </div>
 </div>
 

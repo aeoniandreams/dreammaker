@@ -73,13 +73,6 @@ function initializeColorPicker() {
     colorPicker.addEventListener("input", (e) => {
         colorDisplay.style.backgroundColor = e.target.value;
         updatePreviewColor(e.target.value);
-        // 정보 표의 바깥 테두리를 따로 정하지 않았다면 테마 색상을 따라간다.
-        const infoTable = document.querySelector('#info-editor .editable-table');
-        if (infoTable && !infoTable.dataset.outBorderColor) {
-            infoTable.style.border = `2px solid ${e.target.value}`;
-            const outInput = infoTable.closest('.editable-table-wrap').querySelector('.tbl-all-border');
-            if (outInput) outInput.value = e.target.value;
-        }
         debouncedGenerateHTML();
     });
 }
@@ -314,7 +307,7 @@ let rawHTML = `
 .wiki-main-table {
     border-collapse: collapse;
     width: 100%;
-    border: 2px solid var(--wiki-main-color);
+    border: 2px solid var(--wiki-border-color);
     font-size: 0.96em;
     line-height: var(--wiki-line-height);
     margin: 20px 0 16px;
@@ -1148,7 +1141,7 @@ function legacyToInfoTable(d) {
     (d.fields || []).forEach(f => {
         if (f.name && f.value) rows.push([Object.assign({}, base, { bg: main, content: center(f.name, txt) }), Object.assign({}, base, { content: f.value })]);
     });
-    return { borderColor: INFO_BORDER_COLOR, outBorderColor: main, bgColor: '#ffffff', widthPercent: 100, colWidths: ['30%', '70%'], cells: rows, rows: rows.length, cols: 2 };
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: '', bgColor: '#ffffff', widthPercent: 100, colWidths: ['30%', '70%'], cells: rows, rows: rows.length, cols: 2 };
 }
 
 function buildInfoEditor(infoData) {
@@ -1176,8 +1169,9 @@ function firstLineText(html) {
 function generateInfoTableHTML() {
     const tbl = document.querySelector('#info-editor .editable-table');
     if (!tbl) return '';
-    const outer = tbl.dataset.outBorderColor ? ` border: 2px solid ${tbl.dataset.outBorderColor};` : '';
-    return tableOutputHTML(tbl, `<table class="wiki-main-table" style="table-layout: fixed;${outer}">`);
+    // 바깥 테두리를 따로 정하지 않았다면 안쪽 테두리와 같은 색을 쓴다.
+    const outer = tbl.dataset.outBorderColor || tbl.dataset.borderColor || INFO_BORDER_COLOR;
+    return tableOutputHTML(tbl, `<table class="wiki-main-table" style="table-layout: fixed; border: 2px solid ${outer};">`);
 }
 
 // 정보 표 상단바: 캐럿 위치(또는 선택한 글)에 넣는 기능들
@@ -1357,7 +1351,7 @@ function resolveContainerChildBlock(startEl, container) {
 function buildTableWrapHTML(data, rows, cols, opts = {}) {
     const info = !!opts.info;
     const tblBorderColor = data.borderColor || '#cccccc';
-    const tblOutBorderColor = data.outBorderColor || (info ? document.getElementById("mainColorPicker").value : tblBorderColor);
+    const tblOutBorderColor = data.outBorderColor || tblBorderColor;
     const outBorderAttr = (!info || data.outBorderColor) ? ` data-out-border-color="${tblOutBorderColor}"` : '';
     const tblBgColor = data.bgColor || '#ffffff';
     const tblWidthPercent = data.widthPercent || 100;
@@ -2054,7 +2048,9 @@ function parseWikiHTML(raw) {
         proxy.querySelectorAll('td, th').forEach(c => { c.innerHTML = restoreFn(c.innerHTML); });
         const outInline = /(?:^|;)\s*border:\s*2px solid\s*([^;]+)/.exec(mainTable.getAttribute('style') || '');
         proxy.dataset.borderColor = cssColorToHex(mainTable.querySelector('td, th')?.style.borderColor, INFO_BORDER_COLOR);
-        proxy.dataset.outBorderColor = outInline ? cssColorToHex(outInline[1], '') : '';
+        // 안쪽 테두리와 같은 색이면 "따로 정하지 않음"으로 본다.
+        const outHex = outInline ? cssColorToHex(outInline[1], '') : '';
+        proxy.dataset.outBorderColor = outHex === proxy.dataset.borderColor ? '' : outHex;
         proxy.dataset.bgColor = '#ffffff';
         proxy.dataset.widthPct = '100';
         data.infoTable = Object.assign(serializeTableForSave(proxy), { outBorderColor: proxy.dataset.outBorderColor });
@@ -2816,6 +2812,86 @@ function initTableBlock(block) {
     if (!table) return;
     table.addEventListener('click', tableCellClick);
     setupTableResizer(table);
+    setupTableDragSelect(table);
+}
+
+// 표 안에서 마우스를 끌어 여러 셀을 한 번에 선택한다. 한 셀 안에서 끄는 것은 글자 선택 그대로 둔다.
+// 선택 범위는 시작 셀과 현재 셀을 두 모서리로 하는 직사각형이고, 합쳐진 셀이 걸치면 그 셀 전체를 포함한다.
+function setupTableDragSelect(table) {
+    let startCell = null;
+    let dragging = false;
+
+    const cellRects = () => {
+        const rects = [];
+        buildTableCellGrid(table).forEach((entries, r) => entries.forEach(e => {
+            rects.push({
+                cell: e.cell,
+                r1: r, c1: e.logicalCol,
+                r2: r + (parseInt(e.cell.getAttribute('rowspan')) || 1) - 1,
+                c2: e.logicalCol + e.colspan - 1
+            });
+        }));
+        return rects;
+    };
+
+    const selectRange = (a, b) => {
+        const rects = cellRects();
+        const ra = rects.find(x => x.cell === a);
+        const rb = rects.find(x => x.cell === b);
+        if (!ra || !rb) return;
+        let r1 = Math.min(ra.r1, rb.r1), r2 = Math.max(ra.r2, rb.r2);
+        let c1 = Math.min(ra.c1, rb.c1), c2 = Math.max(ra.c2, rb.c2);
+        const overlaps = x => x.r1 <= r2 && x.r2 >= r1 && x.c1 <= c2 && x.c2 >= c1;
+        let changed = true;
+        while (changed) {
+            changed = false;
+            rects.filter(overlaps).forEach(x => {
+                if (x.r1 < r1) { r1 = x.r1; changed = true; }
+                if (x.r2 > r2) { r2 = x.r2; changed = true; }
+                if (x.c1 < c1) { c1 = x.c1; changed = true; }
+                if (x.c2 > c2) { c2 = x.c2; changed = true; }
+            });
+        }
+        table.querySelectorAll('.tbl-selected').forEach(c => c.classList.remove('tbl-selected'));
+        rects.filter(overlaps).forEach(x => x.cell.classList.add('tbl-selected'));
+        tableUpdateInfo(table.closest('.editable-table-wrap'));
+    };
+
+    const reset = () => {
+        startCell = null;
+        dragging = false;
+        table.classList.remove('tbl-dragging');
+    };
+
+    table.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        const cell = e.target.closest('td, th');
+        if (!cell || !table.contains(cell)) return;
+        const rect = cell.getBoundingClientRect();
+        if (rect.right - e.clientX < 8 || rect.bottom - e.clientY < 8) return; // 열·행 크기 조절 영역
+        startCell = cell;
+        dragging = false;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!startCell) return;
+        if ((e.buttons & 1) === 0) { reset(); return; }
+        const cell = e.target instanceof Element ? e.target.closest('td, th') : null;
+        if (!cell || !table.contains(cell) || (!dragging && cell === startCell)) return;
+        if (!dragging) {
+            dragging = true;
+            table.classList.add('tbl-dragging');
+        }
+        window.getSelection().removeAllRanges();
+        selectRange(startCell, cell);
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!startCell) return;
+        const wasDragging = dragging;
+        reset();
+        if (wasDragging) window.getSelection().removeAllRanges();
+    });
 }
 
 // Serializes a table's actual DOM cells into a full logical rows x cols grid,
@@ -2879,7 +2955,8 @@ function serializeTableForSave(tbl) {
     return { borderColor, outBorderColor, bgColor, widthPercent, colWidths, cells: grid, rows: grid.length, cols };
 }
 
-function saveData() {
+// 지금 작업 내용을 저장 형식(JSON으로 쓰이는 객체)으로 모은다. 파일 저장과 사이트 내 저장이 함께 쓴다.
+function collectSaveData() {
   const data = {
     mainColor: document.getElementById("mainColorPicker").value,
     showDocTitle: document.getElementById("showDocTitle")?.checked ?? true,
@@ -2983,6 +3060,11 @@ function saveData() {
     })
   };
 
+  return data;
+}
+
+function saveData() {
+  const data = collectSaveData();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -3114,3 +3196,154 @@ document.addEventListener('paste', (e) => {
 
     document.execCommand('insertHTML', false, doc.body.innerHTML);
 }, true);
+
+// ── 내 작업 (이 브라우저에 저장) ────────────────
+// 작업 내용을 브라우저의 localStorage에 이름을 붙여 여러 개 보관하고, 목록에서 골라 불러온다.
+// 저장 형식은 JSON 파일 저장과 같다. 다른 기기와 공유되지 않으므로 백업은 JSON 저장을 함께 쓴다.
+const WORKS_KEY = 'dreammaker.works.v1';
+
+function readWorks() {
+    try {
+        const list = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+        return Array.isArray(list) ? list : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function writeWorks(list) {
+    try {
+        localStorage.setItem(WORKS_KEY, JSON.stringify(list));
+        return true;
+    } catch (e) {
+        alert('이 브라우저에 저장하지 못했어요(저장 공간이 부족하거나 저장이 막혀 있어요). 저장 버튼으로 JSON 파일에 백업해 주세요.');
+        return false;
+    }
+}
+
+function workDefaultName() {
+    return document.getElementById('docTitle')?.value.trim() || infoFallbackTitle() || '이름 없는 작업';
+}
+
+function showWorksMsg(text, ok) {
+    const msg = document.getElementById('works-msg');
+    msg.textContent = text;
+    msg.className = 'works-msg ' + (ok ? 'ok' : 'err');
+}
+
+function renderWorks() {
+    const box = document.getElementById('works-list');
+    box.innerHTML = '';
+    const list = readWorks().sort((a, b) => b.savedAt - a.savedAt);
+    if (list.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'works-empty';
+        empty.textContent = '저장된 작업이 없어요.';
+        box.appendChild(empty);
+        return;
+    }
+    list.forEach(w => {
+        const row = document.createElement('div');
+        row.className = 'works-row';
+        row.dataset.id = w.id;
+        const info = document.createElement('div');
+        info.className = 'works-info';
+        const name = document.createElement('div');
+        name.className = 'works-name';
+        name.textContent = w.name;
+        const time = document.createElement('div');
+        time.className = 'works-time';
+        time.textContent = new Date(w.savedAt).toLocaleString('ko-KR');
+        info.append(name, time);
+        const actions = document.createElement('div');
+        actions.className = 'works-actions';
+        [['불러오기', 'load'], ['덮어쓰기', 'overwrite'], ['이름 변경', 'rename'], ['삭제', 'delete']].forEach(([label, act]) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'btn-icon-text' + (act === 'delete' ? ' works-danger' : '');
+            b.dataset.act = act;
+            b.textContent = label;
+            actions.appendChild(b);
+        });
+        row.append(info, actions);
+        box.appendChild(row);
+    });
+}
+
+function openWorks() {
+    document.getElementById('works-name').value = workDefaultName();
+    showWorksMsg('', true);
+    renderWorks();
+    document.getElementById('works-popup').classList.remove('hidden');
+}
+
+function closeWorks() {
+    document.getElementById('works-popup').classList.add('hidden');
+}
+
+function saveCurrentWork() {
+    const name = document.getElementById('works-name').value.trim() || workDefaultName();
+    const list = readWorks();
+    const same = list.find(w => w.name === name);
+    if (same && !confirm(`"${name}" 이름의 작업이 이미 있어요. 현재 작업 내용으로 덮어쓸까요?`)) return;
+    const data = collectSaveData();
+    if (same) {
+        same.data = data;
+        same.savedAt = Date.now();
+    } else {
+        list.push({ id: 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, savedAt: Date.now(), data });
+    }
+    if (writeWorks(list)) {
+        renderWorks();
+        showWorksMsg(`"${name}"을(를) 저장했어요.`, true);
+    }
+}
+
+document.getElementById('works-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const id = btn.closest('.works-row').dataset.id;
+    const list = readWorks();
+    const work = list.find(w => w.id === id);
+    if (!work) return;
+
+    switch (btn.dataset.act) {
+        case 'load':
+            if (!confirm(`현재 작업 내용이 "${work.name}"(으)로 바뀝니다. 계속할까요?`)) return;
+            applyLoadedData(work.data);
+            generateHTML();
+            closeWorks();
+            break;
+        case 'overwrite':
+            if (!confirm(`"${work.name}"을(를) 현재 작업 내용으로 덮어쓸까요?`)) return;
+            work.data = collectSaveData();
+            work.savedAt = Date.now();
+            if (writeWorks(list)) {
+                renderWorks();
+                showWorksMsg(`"${work.name}"을(를) 덮어썼어요.`, true);
+            }
+            break;
+        case 'rename': {
+            const next = (prompt('새 이름을 입력하세요:', work.name) || '').trim();
+            if (!next || next === work.name) return;
+            if (list.some(w => w.id !== id && w.name === next)) {
+                alert('같은 이름의 작업이 이미 있어요.');
+                return;
+            }
+            work.name = next;
+            if (writeWorks(list)) renderWorks();
+            break;
+        }
+        case 'delete':
+            if (!confirm(`"${work.name}"을(를) 삭제할까요? 되돌릴 수 없어요.`)) return;
+            if (writeWorks(list.filter(w => w.id !== id))) {
+                renderWorks();
+                showWorksMsg(`"${work.name}"을(를) 삭제했어요.`, true);
+            }
+            break;
+    }
+});
+
+document.getElementById('works-popup').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('works-popup')) closeWorks();
+});
