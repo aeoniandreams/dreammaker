@@ -1148,6 +1148,24 @@ button {
 }
 
 /* ── 내 작업 팝업 ───────────────────────────── */
+.works-cloud {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.works-cloud[hidden] { display: none; }
+
+.works-cloud-text {
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
 .works-save-row {
   display: flex;
   gap: 8px;

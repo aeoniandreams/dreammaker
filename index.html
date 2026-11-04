@@ -322,7 +322,8 @@
       <h4>내 작업</h4>
     </div>
     <div class="how-to-info">
-      <p class="html-load-desc">작업을 이름을 붙여 이 브라우저에 저장해 두고, 목록에서 골라 불러올 수 있어요. 다른 기기와는 공유되지 않고, 브라우저 데이터를 지우면 사라지니 중요한 작업은 <b>저장</b> 버튼으로 JSON 파일에도 백업해 두세요.</p>
+      <p class="html-load-desc">작업에 이름을 붙여 저장해 두고, 목록에서 골라 불러올 수 있어요. 구글 로그인을 하지 않으면 이 브라우저에만 저장되어 다른 기기와 공유되지 않고 브라우저 데이터를 지우면 사라져요. 중요한 작업은 <b>저장</b> 버튼으로 JSON 파일에도 백업해 두세요.</p>
+      <div id="works-cloud" class="works-cloud" hidden></div>
       <div class="works-save-row">
         <input id="works-name" placeholder="작업 이름" />
         <button type="button" class="btn-copy" onclick="saveCurrentWork()">현재 작업 저장</button>
@@ -354,6 +355,8 @@
 </div>
 
 <script src="newscript.js"></script>
+<script src="firebase-config.js"></script>
+<script type="module" src="cloud.js"></script>
 
 <script>
   document.querySelectorAll('.view-btn').forEach(btn => {

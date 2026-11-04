@@ -3197,9 +3197,10 @@ document.addEventListener('paste', (e) => {
     document.execCommand('insertHTML', false, doc.body.innerHTML);
 }, true);
 
-// ── 내 작업 (이 브라우저에 저장) ────────────────
-// 작업 내용을 브라우저의 localStorage에 이름을 붙여 여러 개 보관하고, 목록에서 골라 불러온다.
-// 저장 형식은 JSON 파일 저장과 같다. 다른 기기와 공유되지 않으므로 백업은 JSON 저장을 함께 쓴다.
+// ── 내 작업 ─────────────────────────────────────
+// 작업 내용을 이름을 붙여 여러 개 보관하고, 목록에서 골라 불러온다. 저장 형식은 JSON 파일 저장과 같다.
+// 저장 위치: 구글 로그인이 되어 있으면 클라우드(Firebase, cloud.js), 아니면 이 브라우저(localStorage).
+// 브라우저 저장은 다른 기기와 공유되지 않으므로 백업은 JSON 저장을 함께 쓴다.
 const WORKS_KEY = 'dreammaker.works.v1';
 
 function readWorks() {
@@ -3221,6 +3222,31 @@ function writeWorks(list) {
     }
 }
 
+const cloudOn = () => !!(window.cloudWorks && window.cloudWorks.configured && window.cloudWorks.user);
+
+async function worksList() {
+    return cloudOn() ? await window.cloudWorks.list() : readWorks();
+}
+
+async function worksPut(work) {
+    if (cloudOn()) {
+        await window.cloudWorks.put(work);
+        return true;
+    }
+    const list = readWorks();
+    const i = list.findIndex(w => w.id === work.id);
+    if (i >= 0) list[i] = work; else list.push(work);
+    return writeWorks(list);
+}
+
+async function worksRemove(id) {
+    if (cloudOn()) {
+        await window.cloudWorks.remove(id);
+        return true;
+    }
+    return writeWorks(readWorks().filter(w => w.id !== id));
+}
+
 function workDefaultName() {
     return document.getElementById('docTitle')?.value.trim() || infoFallbackTitle() || '이름 없는 작업';
 }
@@ -3231,10 +3257,78 @@ function showWorksMsg(text, ok) {
     msg.className = 'works-msg ' + (ok ? 'ok' : 'err');
 }
 
-function renderWorks() {
-    const box = document.getElementById('works-list');
+function worksError(err) {
+    showWorksMsg('작업을 처리하지 못했어요: ' + (err && err.message ? err.message : err), false);
+}
+
+// 클라우드 로그인 상태 줄. firebase-config.js에 설정이 없으면 보이지 않는다.
+function renderCloudStatus() {
+    const box = document.getElementById('works-cloud');
+    const cloud = window.cloudWorks;
     box.innerHTML = '';
-    const list = readWorks().sort((a, b) => b.savedAt - a.savedAt);
+    if (!cloud || !(cloud.configured || cloud.error)) {
+        box.hidden = true;
+        return;
+    }
+    box.hidden = false;
+    const text = document.createElement('div');
+    text.className = 'works-cloud-text';
+    const actions = document.createElement('div');
+    actions.className = 'works-actions';
+    const addBtn = (label, handler) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-icon-text';
+        b.textContent = label;
+        b.addEventListener('click', handler);
+        actions.appendChild(b);
+    };
+
+    if (cloud.error && !cloud.configured) {
+        text.textContent = '클라우드에 연결하지 못했어요. 지금은 이 브라우저에만 저장돼요.';
+    } else if (!cloud.user) {
+        text.textContent = '구글 계정으로 로그인하면 여러 기기·브라우저에서 같은 작업 목록을 쓸 수 있어요. (지금은 이 브라우저에만 저장돼요)';
+        addBtn('구글로 로그인', async () => {
+            try { await cloud.signIn(); } catch (e) { worksError(e); }
+        });
+    } else {
+        text.textContent = `${cloud.user.email || cloud.user.name || '로그인됨'} — 작업이 클라우드에 저장돼요.`;
+        addBtn('로그아웃', async () => {
+            try { await cloud.signOut(); } catch (e) { worksError(e); }
+        });
+        const local = readWorks();
+        if (local.length > 0) {
+            addBtn(`이 브라우저의 작업 ${local.length}개를 클라우드로 옮기기`, moveLocalWorksToCloud);
+        }
+    }
+    box.append(text, actions);
+}
+
+async function moveLocalWorksToCloud() {
+    const local = readWorks();
+    if (!local.length) return;
+    if (!confirm(`이 브라우저에 저장된 작업 ${local.length}개를 클라우드로 옮길까요? 옮긴 뒤 이 브라우저의 저장본은 지워져요.`)) return;
+    try {
+        for (const w of local) await window.cloudWorks.put(w);
+        localStorage.removeItem(WORKS_KEY);
+        showWorksMsg(`작업 ${local.length}개를 클라우드로 옮겼어요.`, true);
+        renderCloudStatus();
+        await renderWorks();
+    } catch (e) {
+        worksError(e);
+    }
+}
+
+async function renderWorks() {
+    const box = document.getElementById('works-list');
+    let list;
+    try {
+        list = (await worksList()).sort((a, b) => b.savedAt - a.savedAt);
+    } catch (e) {
+        worksError(e);
+        return;
+    }
+    box.innerHTML = '';
     if (list.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'works-empty';
@@ -3273,6 +3367,7 @@ function renderWorks() {
 function openWorks() {
     document.getElementById('works-name').value = workDefaultName();
     showWorksMsg('', true);
+    renderCloudStatus();
     renderWorks();
     document.getElementById('works-popup').classList.remove('hidden');
 }
@@ -3281,69 +3376,80 @@ function closeWorks() {
     document.getElementById('works-popup').classList.add('hidden');
 }
 
-function saveCurrentWork() {
+async function saveCurrentWork() {
     const name = document.getElementById('works-name').value.trim() || workDefaultName();
-    const list = readWorks();
-    const same = list.find(w => w.name === name);
-    if (same && !confirm(`"${name}" 이름의 작업이 이미 있어요. 현재 작업 내용으로 덮어쓸까요?`)) return;
-    const data = collectSaveData();
-    if (same) {
-        same.data = data;
-        same.savedAt = Date.now();
-    } else {
-        list.push({ id: 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, savedAt: Date.now(), data });
-    }
-    if (writeWorks(list)) {
-        renderWorks();
-        showWorksMsg(`"${name}"을(를) 저장했어요.`, true);
+    try {
+        const list = await worksList();
+        const same = list.find(w => w.name === name);
+        if (same && !confirm(`"${name}" 이름의 작업이 이미 있어요. 현재 작업 내용으로 덮어쓸까요?`)) return;
+        const work = same || { id: 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name };
+        work.data = collectSaveData();
+        work.savedAt = Date.now();
+        if (await worksPut(work)) {
+            await renderWorks();
+            showWorksMsg(`"${name}"을(를) 저장했어요.`, true);
+        }
+    } catch (e) {
+        worksError(e);
     }
 }
 
-document.getElementById('works-list').addEventListener('click', (e) => {
+document.getElementById('works-list').addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]');
     if (!btn) return;
     const id = btn.closest('.works-row').dataset.id;
-    const list = readWorks();
-    const work = list.find(w => w.id === id);
-    if (!work) return;
+    try {
+        const list = await worksList();
+        const work = list.find(w => w.id === id);
+        if (!work) return;
 
-    switch (btn.dataset.act) {
-        case 'load':
-            if (!confirm(`현재 작업 내용이 "${work.name}"(으)로 바뀝니다. 계속할까요?`)) return;
-            applyLoadedData(work.data);
-            generateHTML();
-            closeWorks();
-            break;
-        case 'overwrite':
-            if (!confirm(`"${work.name}"을(를) 현재 작업 내용으로 덮어쓸까요?`)) return;
-            work.data = collectSaveData();
-            work.savedAt = Date.now();
-            if (writeWorks(list)) {
-                renderWorks();
-                showWorksMsg(`"${work.name}"을(를) 덮어썼어요.`, true);
+        switch (btn.dataset.act) {
+            case 'load':
+                if (!confirm(`현재 작업 내용이 "${work.name}"(으)로 바뀝니다. 계속할까요?`)) return;
+                applyLoadedData(work.data);
+                generateHTML();
+                closeWorks();
+                break;
+            case 'overwrite':
+                if (!confirm(`"${work.name}"을(를) 현재 작업 내용으로 덮어쓸까요?`)) return;
+                work.data = collectSaveData();
+                work.savedAt = Date.now();
+                if (await worksPut(work)) {
+                    await renderWorks();
+                    showWorksMsg(`"${work.name}"을(를) 덮어썼어요.`, true);
+                }
+                break;
+            case 'rename': {
+                const next = (prompt('새 이름을 입력하세요:', work.name) || '').trim();
+                if (!next || next === work.name) return;
+                if (list.some(w => w.id !== id && w.name === next)) {
+                    alert('같은 이름의 작업이 이미 있어요.');
+                    return;
+                }
+                work.name = next;
+                if (await worksPut(work)) await renderWorks();
+                break;
             }
-            break;
-        case 'rename': {
-            const next = (prompt('새 이름을 입력하세요:', work.name) || '').trim();
-            if (!next || next === work.name) return;
-            if (list.some(w => w.id !== id && w.name === next)) {
-                alert('같은 이름의 작업이 이미 있어요.');
-                return;
-            }
-            work.name = next;
-            if (writeWorks(list)) renderWorks();
-            break;
+            case 'delete':
+                if (!confirm(`"${work.name}"을(를) 삭제할까요? 되돌릴 수 없어요.`)) return;
+                if (await worksRemove(id)) {
+                    await renderWorks();
+                    showWorksMsg(`"${work.name}"을(를) 삭제했어요.`, true);
+                }
+                break;
         }
-        case 'delete':
-            if (!confirm(`"${work.name}"을(를) 삭제할까요? 되돌릴 수 없어요.`)) return;
-            if (writeWorks(list.filter(w => w.id !== id))) {
-                renderWorks();
-                showWorksMsg(`"${work.name}"을(를) 삭제했어요.`, true);
-            }
-            break;
+    } catch (err) {
+        worksError(err);
     }
 });
 
 document.getElementById('works-popup').addEventListener('click', (e) => {
     if (e.target === document.getElementById('works-popup')) closeWorks();
+});
+
+// 로그인 상태가 바뀌면(로그인·로그아웃·연결 완료) 팝업의 상태 줄과 목록을 새로 그린다.
+window.addEventListener('cloudauth', () => {
+    if (document.getElementById('works-popup').classList.contains('hidden')) return;
+    renderCloudStatus();
+    renderWorks();
 });
