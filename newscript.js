@@ -277,6 +277,31 @@ let rawHTML = `
     margin: 0 auto;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    font-weight: 400;
+    letter-spacing: normal;
+    font-variant-numeric: normal;
+    font-feature-settings: normal;
+    font-variation-settings: normal;
+}
+
+/* 블로그 스킨이 링크·표 칸·문단 등에 따로 지정한 굵기, 자간, 글꼴이 이 글을 덮어쓰지 않도록,
+   바깥 상자의 값을 그대로 따르게 한다. (굵게/제목/표 머리글은 원래 굵기를 유지하려고 뺐다.) */
+#wikiwrap a,
+#wikiwrap time,
+#wikiwrap span,
+#wikiwrap div,
+#wikiwrap p,
+#wikiwrap td,
+#wikiwrap li,
+#wikiwrap summary,
+#wikiwrap ruby,
+#wikiwrap rt {
+    font-family: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    font-variant-numeric: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
 }
 
 #wikiwrap a,
