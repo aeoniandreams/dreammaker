@@ -3165,29 +3165,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ── 붙여넣기: 글씨 배경색 제거 ─────────────────
-// 복사한 글자에 딸려 오는 배경색(형광펜 포함)은 붙여 넣을 때 버린다.
-// 글자색·굵기 등 다른 서식은 그대로 두고, 스크립트가 될 수 있는 요소는 함께 걸러낸다.
+// ── 붙여넣기: 글 내용만 ────────────────────────
+// 웹페이지·문서에서 복사한 글은 글꼴, 크기, 줄 간격, 색, 배경색 같은 서식을 모두 버리고 글자만 붙여 넣는다.
+// (사이트 안에서 복사한 글도 마찬가지라, 굵게·색 같은 서식은 위 도구 모음으로 다시 입히면 된다.)
+// 복사한 것에 글자가 없고 HTML만 있는 경우(그림 등)에는 서식 속성을 모두 걷어낸 HTML을 넣는다.
+function escapeHTMLText(t) {
+    return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 document.addEventListener('paste', (e) => {
     const target = e.target instanceof Element ? e.target : null;
     if (!target || !target.closest('[contenteditable="true"]')) return;
-    const html = e.clipboardData && e.clipboardData.getData('text/html');
+    const clip = e.clipboardData;
+    if (!clip) return;
+    const text = clip.getData('text/plain');
+    const html = clip.getData('text/html');
+
+    if (text) {
+        e.preventDefault();
+        const body = escapeHTMLText(text.replace(/\r\n?/g, '\n'))
+            .replace(/ {2,}/g, m => ' ' + '&nbsp;'.repeat(m.length - 1))
+            .replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+            .replace(/\n/g, '<br>');
+        document.execCommand('insertHTML', false, body);
+        return;
+    }
     if (!html) return;
     e.preventDefault();
 
     const doc = new DOMParser().parseFromString(html, 'text/html');
     doc.querySelectorAll('script, style, link, meta, iframe, object, embed').forEach(el => el.remove());
-    doc.querySelectorAll('mark').forEach(el => el.replaceWith(...el.childNodes));
     doc.querySelectorAll('*').forEach(el => {
         Array.from(el.attributes).forEach(a => {
-            if (/^on/i.test(a.name) || a.name === 'bgcolor' || /^\s*javascript:/i.test(a.value)) el.removeAttribute(a.name);
+            const keep = (el.tagName === 'IMG' && (a.name === 'src' || a.name === 'alt')) || (el.tagName === 'A' && a.name === 'href');
+            if (!keep || /^\s*javascript:/i.test(a.value)) el.removeAttribute(a.name);
         });
-        if (el.hasAttribute('style')) {
-            el.style.removeProperty('background');
-            el.style.removeProperty('background-color');
-            el.style.removeProperty('background-image');
-            if (!el.getAttribute('style').trim()) el.removeAttribute('style');
-        }
     });
     const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_COMMENT);
     const comments = [];
