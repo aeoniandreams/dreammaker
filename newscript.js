@@ -183,9 +183,9 @@ function generateHTML() {
   let titleTimeHTML = "";
   if (showDocTitle && finalTitle) {
       titleTimeHTML = `
-      <div style="margin-bottom: 1.5rem;">
-        <h1 style="font-size: 2rem; font-weight: 700; line-height: 1; margin: 0;">${finalTitle}</h1>
-        <p style="font-size: .9rem; margin: .5rem 0 0; color: inherit; opacity: 0.7;">최근 수정 시각: <time>${getFormattedTime()}</time></p>
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 32px; font-weight: 700; line-height: 1.2 !important; margin: 0 !important; padding: 0 !important;">${finalTitle}</h1>
+        <div style="font-size: 14.4px; line-height: 1.5 !important; margin: 0 !important; padding: 8px 0 0 !important; color: inherit; opacity: 0.7;">최근 수정 시각: <time>${getFormattedTime()}</time></div>
       </div>`;
   }
   const infoTableHTML = generateInfoTableHTML();
