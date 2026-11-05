@@ -517,6 +517,23 @@ input::placeholder { color: var(--text-3); }
 
 .dropdown.active .dropdown-content { display: block; }
 
+/* 메뉴가 화면 오른쪽 밖으로 나가면(JS가 align-right를 붙임) 버튼 오른쪽 끝에 맞춰 연다. */
+.dropdown-wide .dropdown-content { min-width: 200px; }
+.dropdown.align-right .dropdown-content {
+  left: auto;
+  right: 0;
+}
+
+.dropdown-content a {
+  flex-wrap: wrap;
+}
+
+.dd-desc {
+  flex-basis: 100%;
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+
 /* ── Editable Blocks ───────────────────────── */
 #editor-container {
   min-height: 300px;

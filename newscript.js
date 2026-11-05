@@ -15,28 +15,38 @@ document.addEventListener('DOMContentLoaded', (event) => {
     buildInfoEditor();
     generateHTML();
 
-    const dropdown = document.querySelector('.dropdown');
-    const dropdownBtn = dropdown.querySelector('.toolbar-button.has-text');
-    const dropdownLinks = dropdown.querySelectorAll('.dropdown-content a');
+    renderTableTemplateMenu();
 
-    if (dropdownBtn) {
-        dropdownBtn.addEventListener('click', (e) => {
-            e.preventDefault(); 
-            e.stopPropagation();
-            dropdown.classList.toggle('active');
-        });
-    }
-
-    dropdownLinks.forEach(link => {
-        link.addEventListener('click', () => {
+    // 툴바의 드롭다운 메뉴(제목, 표 템플릿)를 모두 같은 방식으로 연다.
+    const dropdowns = document.querySelectorAll('.dropdown');
+    dropdowns.forEach(dropdown => {
+        const dropdownBtn = dropdown.querySelector('.toolbar-button.has-text');
+        if (dropdownBtn) {
+            dropdownBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropdowns.forEach(d => { if (d !== dropdown) d.classList.remove('active'); });
+                dropdown.classList.toggle('active');
+                // 메뉴가 화면 오른쪽 밖으로 나가면 버튼 오른쪽 끝에 맞춰 연다.
+                dropdown.classList.remove('align-right');
+                const content = dropdown.querySelector('.dropdown-content');
+                if (dropdown.classList.contains('active') && content.getBoundingClientRect().right > window.innerWidth - 8) {
+                    dropdown.classList.add('align-right');
+                }
+            });
+        }
+        // 메뉴는 항목을 나중에 채우기도 하므로, 클릭은 메뉴 영역에서 받아 처리한다.
+        dropdown.querySelector('.dropdown-content').addEventListener('click', () => {
             dropdown.classList.remove('active');
         });
     });
 
     document.addEventListener('click', (e) => {
-        if (dropdown && dropdown.classList.contains('active') && !dropdown.contains(e.target)) {
-            dropdown.classList.remove('active');
-        }
+        dropdowns.forEach(dropdown => {
+            if (dropdown.classList.contains('active') && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
     });
 
     document.getElementById('input-section').addEventListener('input', debouncedGenerateHTML);
@@ -1175,6 +1185,44 @@ function legacyToInfoTable(d) {
         if (f.name && f.value) rows.push([Object.assign({}, base, { bg: main, content: center(f.name, txt) }), Object.assign({}, base, { content: f.value })]);
     });
     return { borderColor: INFO_BORDER_COLOR, outBorderColor: '', bgColor: '#ffffff', widthPercent: 100, colWidths: ['30%', '70%'], cells: rows, rows: rows.length, cols: 2 };
+}
+
+// ── 표 템플릿 ──────────────────────────────────
+// 행·열 수를 묻지 않고, 정해진 모양의 표 블록을 바로 넣는다. 넣은 표는 일반 표 블록과 같아서
+// 행·열 추가, 셀 합치기, 색, 열 너비 등 표 도구를 모두 그대로 쓸 수 있다.
+// 새 템플릿은 아래 목록에 { id, name, build } 항목만 추가하면 메뉴에 나타난다.
+// build()는 표 데이터({ rows, cols, cells, colWidths, ... })를 돌려준다.
+const TABLE_TEMPLATES = [
+    { id: 'profile', name: '캐릭터 프로필 표', desc: '2칸 x 10줄 · 1~2줄 합침 · 3:7', build: () => defaultInfoTableData() }
+];
+
+function renderTableTemplateMenu() {
+    const menu = document.getElementById('table-template-menu');
+    if (!menu) return;
+    menu.innerHTML = '';
+    TABLE_TEMPLATES.forEach(t => {
+        const a = document.createElement('a');
+        a.href = '#';
+        const label = document.createElement('span');
+        label.textContent = t.name;
+        a.appendChild(label);
+        if (t.desc) {
+            const desc = document.createElement('small');
+            desc.className = 'dd-desc';
+            desc.textContent = t.desc;
+            a.appendChild(desc);
+        }
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            addTableTemplate(t.id);
+        });
+        menu.appendChild(a);
+    });
+}
+
+function addTableTemplate(id) {
+    const template = TABLE_TEMPLATES.find(t => t.id === id);
+    if (template) addBlock('table', template.build());
 }
 
 function buildInfoEditor(infoData) {
