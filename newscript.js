@@ -15,8 +15,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     buildInfoEditor();
     generateHTML();
 
-    renderTableTemplateMenu();
-
     // 툴바의 드롭다운 메뉴(제목, 표 템플릿)를 모두 같은 방식으로 연다.
     const dropdowns = document.querySelectorAll('.dropdown');
     dropdowns.forEach(dropdown => {
@@ -1150,15 +1148,15 @@ function basicInsertFootnote() {
 const INFO_BORDER_COLOR = '#dddddd';
 const INFO_GRAY = '#eeeeee';
 
-// 기본 템플릿: 2칸 x 10줄. 1~2줄은 한 칸으로 합쳐지고, 3줄부터 3:7로 나뉘며,
+// 기본 틀: 2칸 x totalRows줄(정보 표는 10줄). 1~2줄은 한 칸으로 합쳐지고, 3줄부터 3:7로 나뉘며,
 // 합쳐진 칸과 3줄부터의 왼쪽 칸은 옅은 회색이다.
-function defaultInfoTableData() {
+function defaultInfoTableData(totalRows = 10) {
     const cell = extra => Object.assign({ content: '', bg: '', border: INFO_BORDER_COLOR, rowspan: 1, colspan: 1, isHeader: false, width: '', height: '' }, extra);
     const cells = [];
-    for (let r = 0; r < 10; r++) {
+    for (let r = 0; r < totalRows; r++) {
         cells.push(r < 2 ? [cell({ colspan: 2, bg: INFO_GRAY }), { hidden: true }] : [cell({ bg: INFO_GRAY }), cell({})]);
     }
-    return { borderColor: INFO_BORDER_COLOR, outBorderColor: '', bgColor: '#ffffff', widthPercent: 100, colWidths: ['30%', '70%'], cells, rows: 10, cols: 2 };
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: '', bgColor: '#ffffff', widthPercent: 100, colWidths: ['30%', '70%'], cells, rows: totalRows, cols: 2 };
 }
 
 // 예전 저장 파일/코드(이름·이미지·상세 프로필 입력칸 방식)를 같은 모양의 표로 옮긴다.
@@ -1190,35 +1188,12 @@ function legacyToInfoTable(d) {
 // ── 표 템플릿 ──────────────────────────────────
 // 행·열 수를 묻지 않고, 정해진 모양의 표 블록을 바로 넣는다. 넣은 표는 일반 표 블록과 같아서
 // 행·열 추가, 셀 합치기, 색, 열 너비 등 표 도구를 모두 그대로 쓸 수 있다.
-// 새 템플릿은 아래 목록에 { id, name, build } 항목만 추가하면 메뉴에 나타난다.
-// build()는 표 데이터({ rows, cols, cells, colWidths, ... })를 돌려준다.
+// 템플릿은 모두 8줄(합쳐진 줄 포함)로 만든다. build()는 표 데이터({ rows, cols, cells, colWidths, ... })를 돌려준다.
+// 지금은 하나뿐이라 툴바 버튼을 누르면 바로 들어간다. 템플릿이 여러 개가 되면 버튼을
+// 드롭다운 메뉴(.dropdown)로 바꿔 이 목록에서 고르게 한다.
 const TABLE_TEMPLATES = [
-    { id: 'profile', name: '캐릭터 프로필 표', desc: '2칸 x 10줄 · 1~2줄 합침 · 3:7', build: () => defaultInfoTableData() }
+    { id: 'profile', name: '프로필 템플릿', build: () => defaultInfoTableData(8) }
 ];
-
-function renderTableTemplateMenu() {
-    const menu = document.getElementById('table-template-menu');
-    if (!menu) return;
-    menu.innerHTML = '';
-    TABLE_TEMPLATES.forEach(t => {
-        const a = document.createElement('a');
-        a.href = '#';
-        const label = document.createElement('span');
-        label.textContent = t.name;
-        a.appendChild(label);
-        if (t.desc) {
-            const desc = document.createElement('small');
-            desc.className = 'dd-desc';
-            desc.textContent = t.desc;
-            a.appendChild(desc);
-        }
-        a.addEventListener('click', (e) => {
-            e.preventDefault();
-            addTableTemplate(t.id);
-        });
-        menu.appendChild(a);
-    });
-}
 
 function addTableTemplate(id) {
     const template = TABLE_TEMPLATES.find(t => t.id === id);
