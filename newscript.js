@@ -1340,9 +1340,9 @@ function genreFold(level, text, color) {
     return `<div data-wiki-fold="${level}" style="text-align: center;${color ? ` color: ${color};` : ''}"><b>${text}</b></div>`;
 }
 
-// 3칸 격자 전체를 차지하는 한 줄
-function genreFull(content, bg) {
-    return [genreCell(content, bg, { colspan: 3 }), GENRE_HIDDEN, GENRE_HIDDEN];
+// 격자(기본 3칸) 전체를 차지하는 한 줄
+function genreFull(content, bg, cols = 3) {
+    return [genreCell(content, bg, { colspan: cols }), ...Array(cols - 1).fill(GENRE_HIDDEN)];
 }
 
 // 문호 스트레이독스 - 포트 마피아의 멤버. 나무위키처럼 접고 펼 수 있게 두 군데에 접는 줄(data-wiki-fold)을 둔다:
@@ -1390,15 +1390,18 @@ function mysticMessengerTable() {
     const logo = genreCenter(`<img src="${MYSTIC_LOGO}" alt="수상한 메신저 로고" referrerpolicy="no-referrer" style="display: block; width: 320px; max-width: 100%; height: auto; margin: 0 auto 4px;"><span style="color: ${gold};">수상한 메신저</span>`);
     const menu = genreCenter(['등장인물', '설정', '사건 사고', 'DLC', '웹툰'].map(w => `<span style="color: ${gold};">${w}</span>`).join(' <span style="color: #ffffff;">·</span> '));
     const person = (name, cv, bg, color) => genreCell(genreCenter(`<b>${name}</b><br>(CV. ${cv})`, color), bg);
+    // 인물은 2칸 x 5줄(10명). 가운데 윤가을은 이 사이트에서 더한 가상의 항목이라 CV 자리에 "가상 CV: ?"를 적었다.
     const rows = [
-        genreFull(logo, base),
-        genreFull(menu, base),
-        genreFull(genreFold(1, '▼ 개별 문서가 있는 등장인물 ▼', gold), base),
-        [person('ZEN', '김장', '#f5f5f5', '#ed0000'), person('강제희', '양정화', '#f2cb61', '#993800'), person('유성★', '심규혁', '#1ddb16', '#ffff24')],
-        [person('한주민', '신용우', '#d1b2ff', '#151278'), person('707', '김영선', '#db0000', '#ffd700'), person('V', '이호산', '#d4f4fa', '#4fc9de')],
-        [person('리카', '이현진', '#faf4c0', '#f2cb61'), person('레이/Unknown', '강수진', '#e8ffff', '#bd2470'), person('메리 벤더우드 3세', '이규창', '#1b0007', '#bd24a9')]
+        genreFull(logo, base, 2),
+        genreFull(menu, base, 2),
+        genreFull(genreFold(1, '▼ 개별 문서가 있는 등장인물 ▼', gold), base, 2),
+        [person('ZEN', '김장', '#f5f5f5', '#ed0000'), person('강제희', '양정화', '#f2cb61', '#993800')],
+        [person('유성★', '심규혁', '#1ddb16', '#ffff24'), person('한주민', '신용우', '#d1b2ff', '#151278')],
+        [person('707', '김영선', '#db0000', '#ffd700'), person('V', '이호산', '#d4f4fa', '#4fc9de')],
+        [person('리카', '이현진', '#faf4c0', '#f2cb61'), person('레이/Unknown', '강수진', '#e8ffff', '#bd2470')],
+        [genreCell(genreCenter('<b>윤가을</b><br>(가상 CV: ?)', '#a04a00'), '#ffd9b3'), person('메리 벤더우드 3세', '이규창', '#1b0007', '#bd24a9')]
     ];
-    return { borderColor: INFO_BORDER_COLOR, outBorderColor: '#ffffff', bgColor: '#ffffff', widthPercent: 100, colWidths: ['33%', '34%', '33%'], cells: rows, rows: rows.length, cols: 3 };
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: '#ffffff', bgColor: '#ffffff', widthPercent: 100, colWidths: ['50%', '50%'], cells: rows, rows: rows.length, cols: 2 };
 }
 
 const GENRES = [
