@@ -273,10 +273,32 @@ let rawHTML = `
     margin-top: 12px;
 }
 
+.wiki-genre-table summary {
+    display: block;
+    opacity: 1 !important;
+    cursor: pointer;
+    padding: 6px 10px;
+    text-align: center;
+}
+
+.wiki-genre-table .wiki-fold-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
 @media (max-width: 767px) {
     .wiki-genre-table td,
     .wiki-genre-table th {
         padding: 5px 6px !important;
+    }
+
+    .wiki-genre-table td.wiki-fold-cell {
+        padding: 0 !important;
+    }
+
+    .wiki-genre-table summary {
+        padding: 5px 6px;
     }
 }
 
@@ -1302,39 +1324,42 @@ function addTableTemplate(id) {
 const GENRE_DARK = '#606060';
 const GENRE_LIGHT = '#bbbbbb';
 const GENRE_BLACK = '#000000';
-const GENRE_LINK = '#0275d8';
 
 function genreCell(content, bg, extra) {
     return Object.assign({ content, bg, border: INFO_BORDER_COLOR, rowspan: 1, colspan: 1, isHeader: false, width: '', height: '' }, extra);
 }
 
-// 문호 스트레이독스 - 포트 마피아의 멤버. 나무위키의 접는 표는 펼친 모양으로 옮기고,
-// 안쪽 표(前 구성원)까지 한 표로 합쳐 3칸(47:29:24) 격자에 담았다. 칸 너비는 % 라서 폰에서도 줄어든다.
+// 문호 스트레이독스 - 포트 마피아의 멤버. 나무위키처럼 접고 펼 수 있게 두 군데에 접는 줄(data-wiki-fold)을 둔다:
+// 제목 아래의 "[ 펼치기 · 접기 ]"(안쪽 전체)와 "【前 구성원】"(그 아래 줄들). 편집기에서는 보통 줄로 보이고,
+// 생성되는 코드에서만 <details>로 바뀐다. 안쪽 표까지 한 표로 합쳐 3칸(47:29:24) 격자에 담았고, 칸 너비는 % 라서 폰에서도 줄어든다.
 function bungoPortMafiaTable() {
     const center = (html, color) => `<div style="text-align: center;${color ? ` color: ${color};` : ''}">${html}</div>`;
     const head = text => center(`<b>${text}</b>`, '#ffffff');
-    const link = name => `<span style="color: ${GENRE_LINK};">${name}</span>`;
-    const names = list => center(list.join(' ・ '));
+    const fold = (level, text, color) => `<div data-wiki-fold="${level}" style="text-align: center;${color ? ` color: ${color};` : ''}"><b>${text}</b></div>`;
+    const names = list => center(list.join(' ・ '), '#000000');
+    const underline = name => `<u>${name}</u>`;
     const hidden = { hidden: true };
     const full = (content, bg) => [genreCell(content, bg, { colspan: 3 }), hidden, hidden];
 
     const rows = [
         full(head('포트 마피아의 멤버'), GENRE_BLACK),
+        full(fold(1, '[ 펼치기 · 접기 ]'), GENRE_LIGHT),
         full(head('<ruby>수령<rt>보스</rt></ruby>'), GENRE_DARK),
-        full(names([link('모리 오가이'), link('엘리스')]), GENRE_LIGHT),
+        full(names([underline('모리 오가이'), '<span style="font-size: 12px;">엘리스</span>']), GENRE_LIGHT),
         full(head('5대 간부'), GENRE_DARK),
-        full(names([link('오자키 코요'), '(공석)', link('나카하라 츄야'), `<span style="color: ${GENRE_LINK};"><ruby>A<rt>에이스</rt></ruby></span>`, link('폴 베를렌')]), GENRE_LIGHT),
+        full(names([underline('오자키 코요'), '(공석)', underline('나카하라 츄야'), '<ruby>A<rt>에이스</rt></ruby>', '폴 베를렌']), GENRE_LIGHT),
         full(head('준간부'), GENRE_DARK),
-        full(names([link('란도')]), GENRE_LIGHT),
+        full(names(['란도']), GENRE_LIGHT),
         full(head('구성원'), GENRE_DARK),
-        full(names([link('아쿠타가와 류노스케'), link('히구치 이치요'), link('카지이 모토지로'), link('유메노 큐사쿠'), link('오다 사쿠노스케')]), GENRE_LIGHT),
+        full(names(['아쿠타가와 류노스케', '히구치 이치요', '카지이 모토지로', '유메노 큐사쿠', '오다 사쿠노스케']), GENRE_LIGHT),
         full(head('산하 조직'), GENRE_DARK),
         [genreCell(head('검은 도마뱀'), GENRE_DARK, { colspan: 2 }), hidden, genreCell(head('플래그스'), GENRE_DARK, { rowspan: 2 })],
-        [genreCell(names([link('히로츠 류로'), link('타치하라 미치조'), link('긴')]), GENRE_LIGHT, { colspan: 2 }), hidden, hidden],
-        full(head('【前 구성원】'), GENRE_DARK),
-        [genreCell(head('간부'), GENRE_DARK), genreCell(names([link('다자이 오사무')]), GENRE_LIGHT, { colspan: 2 }), hidden],
-        [genreCell(head('전속 정보원'), GENRE_DARK), genreCell(names([link('사카구치 안고')]), GENRE_LIGHT, { colspan: 2 }), hidden],
-        [genreCell(head('암살자'), GENRE_DARK), genreCell(names([link('이즈미 쿄카')]), GENRE_LIGHT, { colspan: 2 }), hidden]
+        [genreCell(names(['히로츠 류로', '타치하라 미치조', '긴']), GENRE_LIGHT, { colspan: 2 }), hidden, hidden],
+        full(fold(2, '【前 구성원】', '#ffffff'), GENRE_DARK),
+        [genreCell(head('간부'), GENRE_DARK), genreCell(names([underline('다자이 오사무')]), GENRE_LIGHT, { colspan: 2 }), hidden],
+        [genreCell(head('준간부'), GENRE_DARK), genreCell(names(['<b>타마유키 윤</b>']), GENRE_LIGHT, { colspan: 2 }), hidden],
+        [genreCell(head('전속 정보원'), GENRE_DARK), genreCell(names(['사카구치 안고']), GENRE_LIGHT, { colspan: 2 }), hidden],
+        [genreCell(head('암살자'), GENRE_DARK), genreCell(names(['이즈미 쿄카']), GENRE_LIGHT, { colspan: 2 }), hidden]
     ];
     return { borderColor: INFO_BORDER_COLOR, outBorderColor: GENRE_BLACK, bgColor: '#ffffff', widthPercent: 100, colWidths: ['47%', '29%', '24%'], cells: rows, rows: rows.length, cols: 3 };
 }
@@ -1415,7 +1440,7 @@ function generateGenreTableHTML() {
     if (!tbl) return '';
     const id = document.getElementById('genre-editor').dataset.genre || '';
     const outer = tbl.dataset.outBorderColor || tbl.dataset.borderColor || GENRE_BLACK;
-    return tableOutputHTML(tbl, `<table class="wiki-genre-table" data-genre="${id}" style="table-layout: fixed; border: 2px solid ${outer};">`);
+    return tableOutputHTML(tbl, `<table class="wiki-genre-table" data-genre="${id}" style="table-layout: fixed; border: 2px solid ${outer};">`, { folds: true });
 }
 
 function buildInfoEditor(infoData) {
@@ -2068,32 +2093,73 @@ function addBlock(type, data = {}, targetContainer = null, forceAppend = false) 
 }
 
 // 편집 중인 표(.editable-table)를 출력용 <table>로 바꾼다. 여는 태그는 호출하는 쪽이 정한다.
-function tableOutputHTML(tbl, openTag) {
-    let tableHTML = openTag;
+function colgroupOutputHTML(tbl) {
     const colgroupEl = tbl.querySelector('colgroup');
-    if (colgroupEl) {
-        tableHTML += '<colgroup>';
-        Array.from(colgroupEl.children).forEach(col => {
-            tableHTML += col.style.width ? `<col style="width:${col.style.width};">` : '<col>';
-        });
-        tableHTML += '</colgroup>';
+    if (!colgroupEl) return '';
+    return '<colgroup>' + Array.from(colgroupEl.children).map(col => col.style.width ? `<col style="width:${col.style.width};">` : '<col>').join('') + '</colgroup>';
+}
+
+function cellOutputHTML(cell) {
+    const tag = cell.tagName.toLowerCase();
+    const rowspan = cell.getAttribute('rowspan') > 1 ? ` rowspan="${cell.getAttribute('rowspan')}"` : '';
+    const colspan = cell.getAttribute('colspan') > 1 ? ` colspan="${cell.getAttribute('colspan')}"` : '';
+    const bg = cell.style.backgroundColor ? `background-color:${cell.style.backgroundColor};` : '';
+    const border = cell.style.borderColor || '#cccccc';
+    const padding = '6px 10px';
+    const width = cell.style.width ? `width:${cell.style.width};` : '';
+    const height = cell.style.height ? `height:${cell.style.height};` : '';
+    return `<${tag}${rowspan}${colspan} style="border:1px solid ${border};${bg}padding:${padding};vertical-align:middle;word-break:break-word;${width}${height}">${cell.innerHTML}</${tag}>`;
+}
+
+function rowOutputHTML(row) {
+    return '<tr>' + Array.from(row.cells).map(cellOutputHTML).join('') + '</tr>';
+}
+
+// 접기 표시: 첫 칸 안에 data-wiki-fold="단계"가 붙은 요소가 있는 한 칸짜리 줄은 "접는 줄"이다.
+// 그 줄 아래로, 같거나 낮은 단계의 접는 줄이 나오기 전까지(없으면 표 끝까지)가 접히는 내용이다.
+function foldMarker(row) {
+    const cell = row.cells[0];
+    return cell ? cell.querySelector('[data-wiki-fold]') : null;
+}
+
+function foldLevel(marker) {
+    return parseInt(marker.getAttribute('data-wiki-fold')) || 1;
+}
+
+// 접는 줄은 <details>로 만들고, 접히는 줄들은 같은 칸 너비(colgroup)를 가진 안쪽 표에 담는다.
+function foldedRowsHTML(rows, colgroup) {
+    let html = '';
+    for (let i = 0; i < rows.length; i++) {
+        const marker = foldMarker(rows[i]);
+        if (!marker || rows[i].cells.length !== 1) {
+            html += rowOutputHTML(rows[i]);
+            continue;
+        }
+        const level = foldLevel(marker);
+        let j = i + 1;
+        while (j < rows.length) {
+            const next = foldMarker(rows[j]);
+            if (next && foldLevel(next) <= level) break;
+            j++;
+        }
+        const cell = rows[i].cells[0];
+        const colspan = cell.getAttribute('colspan') > 1 ? ` colspan="${cell.getAttribute('colspan')}"` : '';
+        const bg = cell.style.backgroundColor ? `background-color:${cell.style.backgroundColor};` : '';
+        const border = cell.style.borderColor || '#cccccc';
+        const inner = foldedRowsHTML(rows.slice(i + 1, j), colgroup);
+        html += `<tr><td class="wiki-fold-cell"${colspan} style="border:1px solid ${border};${bg}padding:0;vertical-align:top;"><details class="wiki-fold"><summary>${cell.innerHTML}</summary>`
+            + (inner ? `<table class="wiki-fold-table" style="table-layout:fixed;">${colgroup}${inner}</table>` : '')
+            + '</details></td></tr>';
+        i = j - 1;
     }
-    tbl.querySelectorAll('tr').forEach(row => {
-        tableHTML += '<tr>';
-        row.querySelectorAll('td, th').forEach(cell => {
-            const tag = cell.tagName.toLowerCase();
-            const rowspan = cell.getAttribute('rowspan') > 1 ? ` rowspan="${cell.getAttribute('rowspan')}"` : '';
-            const colspan = cell.getAttribute('colspan') > 1 ? ` colspan="${cell.getAttribute('colspan')}"` : '';
-            const bg = cell.style.backgroundColor ? `background-color:${cell.style.backgroundColor};` : '';
-            const border = cell.style.borderColor || '#cccccc';
-            const padding = '6px 10px';
-            const width = cell.style.width ? `width:${cell.style.width};` : '';
-            const height = cell.style.height ? `height:${cell.style.height};` : '';
-            tableHTML += `<${tag}${rowspan}${colspan} style="border:1px solid ${border};${bg}padding:${padding};vertical-align:middle;word-break:break-word;${width}${height}">${cell.innerHTML}</${tag}>`;
-        });
-        tableHTML += '</tr>';
-    });
-    return tableHTML + '</table>';
+    return html;
+}
+
+function tableOutputHTML(tbl, openTag, opts = {}) {
+    const rows = Array.from(tbl.querySelectorAll('tr'));
+    const colgroup = colgroupOutputHTML(tbl);
+    const body = opts.folds ? foldedRowsHTML(rows, colgroup) : rows.map(rowOutputHTML).join('');
+    return openTag + colgroup + body + '</table>';
 }
 
 function generateSingleBlockHTML(block) {
@@ -2317,7 +2383,29 @@ function parseWikiHTML(raw) {
     // 장르 표(캐릭터 정보 표 위): 있으면 그대로 편집 가능한 표로 복원한다.
     const genreTable = wrap.querySelector('table.wiki-genre-table');
     if (genreTable) {
-        const proxy = genreTable.cloneNode(true);
+        // 접는 줄(<details>)은 안쪽 표의 줄들과 함께 펼쳐서 한 표로 되돌린다.
+        const proxy = doc.createElement('table');
+        const tbody = doc.createElement('tbody');
+        const colgroupEl = genreTable.querySelector(':scope > colgroup');
+        if (colgroupEl) proxy.appendChild(colgroupEl.cloneNode(true));
+        proxy.appendChild(tbody);
+        const flatten = (table) => {
+            Array.from(table.querySelectorAll(':scope > tbody > tr, :scope > tr')).forEach(tr => {
+                const details = tr.cells.length === 1 ? tr.cells[0].querySelector(':scope > details.wiki-fold') : null;
+                if (!details) {
+                    tbody.appendChild(tr.cloneNode(true));
+                    return;
+                }
+                const markerRow = doc.createElement('tr');
+                const markerCell = tr.cells[0].cloneNode(false);
+                markerCell.innerHTML = details.querySelector(':scope > summary')?.innerHTML || '';
+                markerRow.appendChild(markerCell);
+                tbody.appendChild(markerRow);
+                const innerTable = details.querySelector(':scope > table.wiki-fold-table');
+                if (innerTable) flatten(innerTable);
+            });
+        };
+        flatten(genreTable);
         proxy.querySelectorAll('td, th').forEach(c => { c.innerHTML = restoreFn(c.innerHTML); });
         const outInline = /(?:^|;)\s*border:\s*2px solid\s*([^;]+)/.exec(genreTable.getAttribute('style') || '');
         proxy.dataset.borderColor = cssColorToHex(genreTable.querySelector('td, th')?.style.borderColor, INFO_BORDER_COLOR);
