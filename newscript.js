@@ -11,7 +11,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
     initializeColorPicker();
     initializeResizer();
     initializeBodyEditor();
+    renderBasicToolbars();
     initializeBasicToolbar();
+    renderGenreOptions();
     buildInfoEditor();
     generateHTML();
 
@@ -197,6 +199,7 @@ function generateHTML() {
       </div>`;
   }
   const infoTableHTML = generateInfoTableHTML();
+  const genreTableHTML = generateGenreTableHTML();
 
   const catRows = document.querySelectorAll("#category-list .category-row");
   let categoryItems = [];
@@ -253,6 +256,30 @@ let rawHTML = `
     order: 2;
 }
 
+.wiki-side {
+    order: 1;
+    min-width: 0;
+}
+
+.wiki-genre-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.96em;
+    line-height: var(--wiki-line-height);
+    margin: 20px 0 0;
+}
+
+.wiki-genre-table + .wiki-main-table {
+    margin-top: 12px;
+}
+
+@media (max-width: 767px) {
+    .wiki-genre-table td,
+    .wiki-genre-table th {
+        padding: 5px 6px !important;
+    }
+}
+
 @media (min-width: 768px) {
     .wiki-container {
         flex-direction: row;
@@ -269,6 +296,11 @@ let rawHTML = `
         order: 2;
         flex: 1;
         min-width: 0;
+    }
+
+    .wiki-side {
+        order: 2;
+        flex: 1;
     }
 }
 
@@ -641,7 +673,10 @@ details[open] .wiki-h3-icon ion-icon {
   ${categoryHTML}
   
   <div class="wiki-container">
+    <div class="wiki-side">
+    ${genreTableHTML}
     ${infoTableHTML}
+    </div>
     ${indexHTML}
   </div>
   ${bodyHTML}
@@ -879,59 +914,118 @@ function initializeBodyEditor() {
 // ── 기본정보 탭 툴바 ────────────────────────────
 let basicSavedRange = null;
 
-function initializeBasicToolbar() {
-    const basicToolbar = document.getElementById('basic-toolbar');
-    if (!basicToolbar) return;
+// 기본정보 탭의 표 편집기: 장르 표와 캐릭터 정보 표. 두 편집기가 같은 서식 도구(툴바)를 각각 가진다.
+function basicEditors() {
+    return ['genre-editor', 'info-editor'].map(id => document.getElementById(id)).filter(Boolean);
+}
 
-    const infoEditor = document.getElementById('info-editor');
+// 서식 툴바 HTML. 같은 툴바를 편집기마다 하나씩 만들기 때문에 id는 uid로 구분한다.
+function basicToolbarHTML(uid) {
+    return `
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicExec('bold')" title="굵게"><i class="fa-solid fa-bold"></i></button>
+            <button class="toolbar-button" onclick="basicExec('italic')" title="기울임"><i class="fa-solid fa-italic"></i></button>
+            <button class="toolbar-button" onclick="basicExec('strikethrough')" title="취소선"><i class="fa-solid fa-strikethrough"></i></button>
+            <label class="toolbar-button basic-font-label" for="basicFontColorPicker-${uid}" title="글자 색상"><i class="fa-solid fa-palette"></i></label>
+            <input type="color" class="basic-font-color" id="basicFontColorPicker-${uid}" style="visibility:hidden;position:absolute;width:0;height:0;" />
+            <label class="toolbar-button basic-bg-label" for="basicBgColorPicker-${uid}" title="형광펜"><i class="fa-solid fa-highlighter"></i></label>
+            <input type="color" class="basic-bg-color" id="basicBgColorPicker-${uid}" value="#ffff00" style="visibility:hidden;position:absolute;width:0;height:0;" />
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicExec('justifyLeft')" title="왼쪽 정렬"><i class="fa-solid fa-align-left"></i></button>
+            <button class="toolbar-button" onclick="basicExec('justifyCenter')" title="가운데 정렬"><i class="fa-solid fa-align-center"></i></button>
+            <button class="toolbar-button" onclick="basicExec('justifyRight')" title="오른쪽 정렬"><i class="fa-solid fa-align-right"></i></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicExec('insertUnorderedList')" title="글머리 기호 목록"><i class="fa-solid fa-list-ul"></i></button>
+            <button class="toolbar-button" onclick="basicExec('insertOrderedList')" title="번호 매기기 목록"><i class="fa-solid fa-list-ol"></i></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="changeFontSize(-1, 'basic')" title="글씨 크기 줄이기"><i class="fa-solid fa-chevron-down"></i></button>
+            <input type="number" class="toolbar-fontsize-input basic-fontsize-input" min="8" max="72" step="1" placeholder="14" title="글씨 크기 직접 입력 (px)" onchange="setFontSizeExact(this, 'basic')" />
+            <button class="toolbar-button" onclick="changeFontSize(1, 'basic')" title="글씨 크기 키우기"><i class="fa-solid fa-chevron-up"></i></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicApplyLink()" title="링크"><i class="fa-solid fa-link"></i></button>
+            <button class="toolbar-button" onclick="basicApplySourceLink()" title="출처 링크"><ion-icon name="link-outline"></ion-icon></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" onclick="basicInsertWarn()" title="스포일러 주의"><i class="fa-solid fa-triangle-exclamation"></i></button>
+            <button class="toolbar-button" onclick="basicAddToggle()" title="토글 블록"><i class="fa-solid fa-chevron-right"></i></button>
+            <button class="toolbar-button" onclick="basicInsertImage()" title="이미지 추가"><i class="fa-solid fa-image"></i></button>
+            <button class="toolbar-button" onclick="basicInsertYoutube()" title="유튜브"><i class="fa-brands fa-youtube"></i></button>
+            <button class="toolbar-button" onclick="basicInsertFootnote()" title="각주 추가"><i class="fa-solid fa-asterisk"></i></button>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="toolbar-group">
+            <button class="toolbar-button has-text" onclick="applyRuby()" title="윗주: 글자를 드래그한 뒤 누르고, 글자 위에 올릴 내용을 입력하세요"><i class="fa-solid fa-language"></i><span>윗주</span></button>
+          </div>`;
+}
 
-    basicToolbar.addEventListener('mousedown', (e) => {
-        const target = e.target.closest('button, label');
-        if (target) {
-            e.preventDefault();
-        }
+function renderBasicToolbars() {
+    document.querySelectorAll('.basic-toolbar').forEach(tb => {
+        tb.innerHTML = basicToolbarHTML(tb.id.replace('-toolbar', ''));
     });
+}
+
+function initializeBasicToolbar() {
+    const toolbars = document.querySelectorAll('.basic-toolbar');
+    if (toolbars.length === 0) return;
 
     document.addEventListener('selectionchange', () => {
         const sel = window.getSelection();
         if (!sel || sel.rangeCount === 0) return;
         const range = sel.getRangeAt(0);
-        if (infoEditor && infoEditor.contains(range.commonAncestorContainer)) {
+        if (basicEditors().some(el => el.contains(range.commonAncestorContainer))) {
             basicSavedRange = range.cloneRange();
             updateFontSizeInputDisplay(range, 'basic');
         }
     });
 
-    const fontPicker = document.getElementById('basicFontColorPicker');
-    document.querySelector('label[for="basicFontColorPicker"]').addEventListener('click', (e) => {
-        e.preventDefault();
-        fontPicker.click();
-    });
-    fontPicker.addEventListener('input', () => {
-        if (basicSavedRange) {
-            restoreBasicRange();
-            document.execCommand('styleWithCSS', false, true);
-            document.execCommand('foreColor', false, fontPicker.value);
-            saveBasicRange();
-            debouncedGenerateHTML();
-        }
-    });
-
-    const bgPicker = document.getElementById('basicBgColorPicker');
-    document.querySelector('label[for="basicBgColorPicker"]').addEventListener('click', (e) => {
-        e.preventDefault();
-        bgPicker.click();
-    });
-    bgPicker.addEventListener('input', () => {
-        if (basicSavedRange) {
-            restoreBasicRange();
-            document.execCommand('styleWithCSS', false, true);
-            if (!document.execCommand('hiliteColor', false, bgPicker.value)) {
-                document.execCommand('backColor', false, bgPicker.value);
+    toolbars.forEach(toolbar => {
+        toolbar.addEventListener('mousedown', (e) => {
+            const target = e.target.closest('button, label');
+            if (target) {
+                e.preventDefault();
             }
-            saveBasicRange();
-            debouncedGenerateHTML();
-        }
+        });
+
+        const fontPicker = toolbar.querySelector('.basic-font-color');
+        toolbar.querySelector('.basic-font-label').addEventListener('click', (e) => {
+            e.preventDefault();
+            fontPicker.click();
+        });
+        fontPicker.addEventListener('input', () => {
+            if (basicSavedRange) {
+                restoreBasicRange();
+                document.execCommand('styleWithCSS', false, true);
+                document.execCommand('foreColor', false, fontPicker.value);
+                saveBasicRange();
+                debouncedGenerateHTML();
+            }
+        });
+
+        const bgPicker = toolbar.querySelector('.basic-bg-color');
+        toolbar.querySelector('.basic-bg-label').addEventListener('click', (e) => {
+            e.preventDefault();
+            bgPicker.click();
+        });
+        bgPicker.addEventListener('input', () => {
+            if (basicSavedRange) {
+                restoreBasicRange();
+                document.execCommand('styleWithCSS', false, true);
+                if (!document.execCommand('hiliteColor', false, bgPicker.value)) {
+                    document.execCommand('backColor', false, bgPicker.value);
+                }
+                saveBasicRange();
+                debouncedGenerateHTML();
+            }
+        });
     });
 }
 
@@ -955,7 +1049,7 @@ function basicExec(cmd) {
         restoreBasicRange();
     }
     document.execCommand(cmd);
-    stripAutoInjectedFontSize(document.getElementById('info-editor'));
+    basicEditors().forEach(stripAutoInjectedFontSize);
     saveBasicRange();
     debouncedGenerateHTML();
 }
@@ -993,13 +1087,15 @@ function bodyExec(cmd) {
 
 // ── 글씨 크기 조절 (기본 정보 / 본문 공통) ──────────
 function updateFontSizeInputDisplay(range, scope) {
-    const input = document.getElementById(scope === 'basic' ? 'basicFontSizeInput' : 'bodyFontSizeInput');
-    if (!input) return;
+    const inputs = scope === 'basic'
+        ? Array.from(document.querySelectorAll('.basic-fontsize-input'))
+        : [document.getElementById('bodyFontSizeInput')].filter(Boolean);
+    if (inputs.length === 0) return;
     let node = range.startContainer;
     if (node.nodeType !== Node.ELEMENT_NODE) node = node.parentElement;
     if (!node) return;
     const size = parseFloat(window.getComputedStyle(node).fontSize);
-    input.value = isNaN(size) ? '' : Math.round(size);
+    inputs.forEach(input => { input.value = isNaN(size) ? '' : Math.round(size); });
 }
 
 function changeFontSize(delta, scope) {
@@ -1043,9 +1139,9 @@ function applyFontSizeToSelection(newSize, scope, rangeRef) {
     document.execCommand('styleWithCSS', false, false);
     document.execCommand('fontSize', false, '7');
 
-    const scopeEl = isBasic ? document.getElementById('info-editor') : document.getElementById('editor-container');
+    const scopeEls = isBasic ? basicEditors() : [document.getElementById('editor-container')];
     const newSpans = [];
-    if (scopeEl) {
+    scopeEls.filter(Boolean).forEach(scopeEl => {
         scopeEl.querySelectorAll('font[size="7"]').forEach(f => {
             const span = document.createElement('span');
             span.style.fontSize = newSize + 'px';
@@ -1053,7 +1149,7 @@ function applyFontSizeToSelection(newSize, scope, rangeRef) {
             f.replaceWith(span);
             newSpans.push(span);
         });
-    }
+    });
 
     // Re-select the resized text (boundaries INSIDE the spans, not around
     // them) so repeated clicks and the size input keep working on the same
@@ -1198,6 +1294,128 @@ const TABLE_TEMPLATES = [
 function addTableTemplate(id) {
     const template = TABLE_TEMPLATES.find(t => t.id === id);
     if (template) addBlock('table', template.build());
+}
+
+// ── 장르 ───────────────────────────────────────
+// 장르를 고르면 그 장르의 나무위키식 표가 캐릭터 정보 표 위에 들어간다. 표는 직접 편집할 수 있다.
+// 새 장르는 GENRES에 { id, name, build } 항목을 추가한다. build()는 표 데이터({ rows, cols, cells, colWidths, ... })를 돌려준다.
+const GENRE_DARK = '#606060';
+const GENRE_LIGHT = '#bbbbbb';
+const GENRE_BLACK = '#000000';
+const GENRE_LINK = '#0275d8';
+
+function genreCell(content, bg, extra) {
+    return Object.assign({ content, bg, border: INFO_BORDER_COLOR, rowspan: 1, colspan: 1, isHeader: false, width: '', height: '' }, extra);
+}
+
+// 문호 스트레이독스 - 포트 마피아의 멤버. 나무위키의 접는 표는 펼친 모양으로 옮기고,
+// 안쪽 표(前 구성원)까지 한 표로 합쳐 3칸(47:29:24) 격자에 담았다. 칸 너비는 % 라서 폰에서도 줄어든다.
+function bungoPortMafiaTable() {
+    const center = (html, color) => `<div style="text-align: center;${color ? ` color: ${color};` : ''}">${html}</div>`;
+    const head = text => center(`<b>${text}</b>`, '#ffffff');
+    const link = name => `<span style="color: ${GENRE_LINK};">${name}</span>`;
+    const names = list => center(list.join(' ・ '));
+    const hidden = { hidden: true };
+    const full = (content, bg) => [genreCell(content, bg, { colspan: 3 }), hidden, hidden];
+
+    const rows = [
+        full(head('포트 마피아의 멤버'), GENRE_BLACK),
+        full(head('<ruby>수령<rt>보스</rt></ruby>'), GENRE_DARK),
+        full(names([link('모리 오가이'), link('엘리스')]), GENRE_LIGHT),
+        full(head('5대 간부'), GENRE_DARK),
+        full(names([link('오자키 코요'), '(공석)', link('나카하라 츄야'), `<span style="color: ${GENRE_LINK};"><ruby>A<rt>에이스</rt></ruby></span>`, link('폴 베를렌')]), GENRE_LIGHT),
+        full(head('준간부'), GENRE_DARK),
+        full(names([link('란도')]), GENRE_LIGHT),
+        full(head('구성원'), GENRE_DARK),
+        full(names([link('아쿠타가와 류노스케'), link('히구치 이치요'), link('카지이 모토지로'), link('유메노 큐사쿠'), link('오다 사쿠노스케')]), GENRE_LIGHT),
+        full(head('산하 조직'), GENRE_DARK),
+        [genreCell(head('검은 도마뱀'), GENRE_DARK, { colspan: 2 }), hidden, genreCell(head('플래그스'), GENRE_DARK, { rowspan: 2 })],
+        [genreCell(names([link('히로츠 류로'), link('타치하라 미치조'), link('긴')]), GENRE_LIGHT, { colspan: 2 }), hidden, hidden],
+        full(head('【前 구성원】'), GENRE_DARK),
+        [genreCell(head('간부'), GENRE_DARK), genreCell(names([link('다자이 오사무')]), GENRE_LIGHT, { colspan: 2 }), hidden],
+        [genreCell(head('전속 정보원'), GENRE_DARK), genreCell(names([link('사카구치 안고')]), GENRE_LIGHT, { colspan: 2 }), hidden],
+        [genreCell(head('암살자'), GENRE_DARK), genreCell(names([link('이즈미 쿄카')]), GENRE_LIGHT, { colspan: 2 }), hidden]
+    ];
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: GENRE_BLACK, bgColor: '#ffffff', widthPercent: 100, colWidths: ['47%', '29%', '24%'], cells: rows, rows: rows.length, cols: 3 };
+}
+
+const GENRES = [
+    { id: 'bungo', name: '문호 스트레이독스', build: bungoPortMafiaTable }
+];
+
+function renderGenreOptions() {
+    const select = document.getElementById('genreSelect');
+    if (!select) return;
+    select.innerHTML = '';
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = '선택 안 함';
+    select.appendChild(none);
+    GENRES.forEach(g => {
+        const o = document.createElement('option');
+        o.value = g.id;
+        o.textContent = g.name;
+        select.appendChild(o);
+    });
+}
+
+function currentGenreId() {
+    const host = document.getElementById('genre-editor');
+    return host && host.querySelector('.editable-table') ? (host.dataset.genre || '') : '';
+}
+
+// 장르 표 편집기를 만든다. genreData는 { id, table } 이고, 없으면 장르 없음(편집기 숨김).
+function buildGenreEditor(genreData) {
+    const host = document.getElementById('genre-editor');
+    const area = document.getElementById('genre-editor-area');
+    const select = document.getElementById('genreSelect');
+    basicSavedRange = null;
+    if (!genreData || !genreData.table || !genreData.table.cells) {
+        host.innerHTML = '';
+        delete host.dataset.genre;
+        area.hidden = true;
+        select.value = '';
+        return;
+    }
+    let id = genreData.id || '';
+    if (!GENRES.some(g => g.id === id)) {
+        // 목록에 없는 장르(다른 코드에서 불러온 표)는 "직접 만든 표"로 보여 준다.
+        id = '__custom__';
+        if (!select.querySelector('option[value="__custom__"]')) {
+            const o = document.createElement('option');
+            o.value = '__custom__';
+            o.textContent = '직접 만든 표';
+            select.appendChild(o);
+        }
+    }
+    const d = genreData.table;
+    host.innerHTML = buildTableWrapHTML(d, d.rows || d.cells.length, d.cols || (d.colWidths || []).length || 2, { info: true });
+    initTableBlock(host);
+    host.dataset.genre = id;
+    area.hidden = false;
+    select.value = id;
+}
+
+function onGenreChange() {
+    const select = document.getElementById('genreSelect');
+    const id = select.value;
+    const current = currentGenreId();
+    if (id === current) return;
+    if (current && !confirm('지금 장르 표의 내용이 모두 새 선택으로 바뀝니다. 계속할까요?')) {
+        select.value = current;
+        return;
+    }
+    const genre = GENRES.find(g => g.id === id);
+    buildGenreEditor(genre ? { id, table: genre.build() } : null);
+    debouncedGenerateHTML();
+}
+
+function generateGenreTableHTML() {
+    const tbl = document.querySelector('#genre-editor .editable-table');
+    if (!tbl) return '';
+    const id = document.getElementById('genre-editor').dataset.genre || '';
+    const outer = tbl.dataset.outBorderColor || tbl.dataset.borderColor || GENRE_BLACK;
+    return tableOutputHTML(tbl, `<table class="wiki-genre-table" data-genre="${id}" style="table-layout: fixed; border: 2px solid ${outer};">`);
 }
 
 function buildInfoEditor(infoData) {
@@ -2095,6 +2313,19 @@ function parseWikiHTML(raw) {
     const textColor = colorVar('wiki-text-color');
     if (mainColor) data.mainColor = mainColor; else warnings.push('색상 정보(<style>)가 없어 테마 색상은 현재 값을 그대로 뒀어요.');
     if (textColor) data.nameTextColor = textColor;
+
+    // 장르 표(캐릭터 정보 표 위): 있으면 그대로 편집 가능한 표로 복원한다.
+    const genreTable = wrap.querySelector('table.wiki-genre-table');
+    if (genreTable) {
+        const proxy = genreTable.cloneNode(true);
+        proxy.querySelectorAll('td, th').forEach(c => { c.innerHTML = restoreFn(c.innerHTML); });
+        const outInline = /(?:^|;)\s*border:\s*2px solid\s*([^;]+)/.exec(genreTable.getAttribute('style') || '');
+        proxy.dataset.borderColor = cssColorToHex(genreTable.querySelector('td, th')?.style.borderColor, INFO_BORDER_COLOR);
+        proxy.dataset.outBorderColor = (outInline ? cssColorToHex(outInline[1], '') : '') || GENRE_BLACK;
+        proxy.dataset.bgColor = '#ffffff';
+        proxy.dataset.widthPct = '100';
+        data.genre = { id: genreTable.getAttribute('data-genre') || '', table: serializeTableForSave(proxy) };
+    }
 
     // 정보 표: 직접 편집하는 표(현재 형식)와, 이름·이미지·상세 프로필 입력칸으로 만든 예전 형식을 구분한다.
     const legacy = !!mainTable.querySelector('.wt-name');
@@ -3022,6 +3253,11 @@ function collectSaveData() {
         // 바깥 테두리를 따로 정하지 않았다면 빈 값으로 남겨, 불러온 뒤에도 테마 색상을 따라가게 한다.
         return tbl ? Object.assign(serializeTableForSave(tbl), { outBorderColor: tbl.dataset.outBorderColor || '' }) : null;
     })(),
+    genre: (() => {
+        const tbl = document.querySelector('#genre-editor .editable-table');
+        if (!tbl) return null;
+        return { id: document.getElementById('genre-editor').dataset.genre || '', table: serializeTableForSave(tbl) };
+    })(),
     categories: Array.from(document.querySelectorAll("#category-list .category-row")).map(row => ({
         text: row.querySelector(".cat-text").value,
         link: row.querySelector(".cat-link").value
@@ -3164,6 +3400,7 @@ function applyLoadedData(data) {
     // 정보 표: 새 형식이면 그대로, 예전 형식(이름/이미지/상세 프로필 입력칸)이면 표로 옮겨서 복원한다.
     const isLegacy = !data.infoTable && ['charName', 'imageUrl', 'copyright', 'fields', 'enName', 'jpName', 'jpSurname'].some(k => k in data);
     buildInfoEditor(data.infoTable || (isLegacy ? legacyToInfoTable(data) : null));
+    buildGenreEditor(data.genre || null);
 
     const catList = document.getElementById("category-list");
     if(catList) {

@@ -288,6 +288,7 @@ body {
 }
 
 input[type="text"],
+select,
 input:not([type="color"]):not([type="checkbox"]):not([type="file"]) {
   width: 100%;
   padding: 8px 11px;
@@ -346,7 +347,7 @@ input::placeholder { color: var(--text-3); }
 }
 
 /* ── Basic Info Toolbar ─────────────────────── */
-#basic-toolbar {
+.basic-toolbar {
   display: flex;
   align-items: center;
   gap: 2px;
