@@ -1458,7 +1458,7 @@ function afterlifeTables() {
         ['황혼조', ['시안', '시릴', '카티', '노아']],
         ['밤조', ['나인', '데이', '키르', '아이타치']],
         ['새벽조', ['유세프', '모리', '퀸시', '베린']],
-        ['기타', ['냥선배', '세이', '매니저', '<u>라이너</u>']]
+        ['기타', ['냥선배', '세이', '<b>메르</b>', '매니저', '<u>라이너</u>']]
     ];
     const logoCell = genreCenter(img(AFTERLIFE_IMG.logo, 'width: 150px; max-width: 100%; height: auto; margin: 0 auto 4px;') + '<span style="color: #0275d8;">애프터라이프, 소원을 담는 만화경!</span>');
     const logoRows = [
