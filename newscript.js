@@ -1543,6 +1543,52 @@ function arcanaTwilightTable() {
     return { borderColor: INFO_BORDER_COLOR, outBorderColor: purple, bgColor: '#ffffff', widthPercent: 100, colWidths: ['14.28%', '14.28%', '14.28%', '14.29%', '14.29%', '14.29%', '14.29%'], cells: rows, rows: rows.length, cols: 7 };
 }
 
+// 슬램덩크 - 북산 표: 줄무늬 제목(로고), 접는 줄, 감독/스태프/학년별 선수 줄(2칸: 20% / 80%), 줄무늬 띠 + 슈퍼슬램 엔트리.
+// 접는 줄 아래의 줄무늬 띠부터는 접히지 않으므로 그 띠에 data-wiki-fold-end를 붙인다.
+// 줄무늬·제목줄이 칸 가장자리까지 차도록 칸 안쪽 여백만큼 음수 여백을 쓰고, 폰에서도 그 여백(6px 10px)을 그대로 둔다(css).
+const SLAM_LOGO = 'https://i.namu.wiki/i/yMlZCupm5_y2VlStjNvitCuKj5GfF0_ABH7ybCaq-_HRO3YqzGlJLioHXrB_boOrVyWkop3rZOrqIohcEQYNuMvmK5QfmEoBkmTty13Su1VdNEI0CZqcsU-GMO2FKAurjkuSkELYLrKOsQKeep7KfA.webp';
+
+function slamDunkTable() {
+    const red = '#ff0000';
+    const white = '#ffffff';
+    const black = '#000000';
+    const stripe = 'linear-gradient(to right, #fff 8px, #000 8px, #000 12px, #ff0000 12px, #ff0000 20px, #000 20px, #000 24px, #fff 24px, #fff 32px, transparent 32px), '
+        + 'linear-gradient(to left, #fff 8px, #000 8px, #000 12px, #ff0000 12px, #ff0000 20px, #000 20px, #000 24px, #fff 24px, #fff 32px, transparent 32px)';
+    const band = 'linear-gradient(to bottom, #fff 20%, #000 20%, #000 30%, #ff0000 30%, #ff0000 70%, #000 70%, #000 80%, #fff 80%, transparent 80%)';
+    const name = n => `<span style="color: ${red};">${n}</span>`;
+    const num = n => `<b style="color: ${black};">${n}</b>`;
+    const left = html => genreCell(`<div style="text-align: left;">${html}</div>`, white);
+    const label = text => genreCell(genreCenter(`<b>${text}</b>`, white), red);
+    const line = (text, html) => [label(text), left(html)];
+    const sep = ' · ';
+
+    const header = `<div style="margin: -6px -10px; padding: 5px 10px; background-image: ${stripe}; border-bottom: 1px solid ${red};">`
+        + `<div style="text-align: center; color: ${black};"><b><sup>湘北 / SHOHOKU</sup></b>`
+        + `<img src="${SLAM_LOGO}" referrerpolicy="no-referrer" style="display: block; width: 100px; max-width: 100%; height: auto; margin: 0 auto;">`
+        + `<b>북산</b> (상북ㆍ신성)</div></div>`;
+    const bandCell = (extraAttr, top) => genreCell(
+        `<div${extraAttr} style="margin: -6px -10px; padding: 5px 10px; min-height: 1em; background-image: ${band};${top ? ` border-top: 1px solid ${red};` : ''}"></div>`, white);
+    const entry = `<div style="text-align: center; color: ${white}; font-size: .85em;">슈퍼슬램 북산(상북) 엔트리<br>채치수 · 정대만 (권준호) · 송태섭 (이달재) · 강백호 · 서태웅</div>`;
+
+    const rows = [
+        genreFull(header, red, 2),
+        genreFull(genreFold(1, '[ 펼치기 · 접기 ]', red), white, 2),
+        line('감독', name('안한수')),
+        line('스태프', `${name('이한나')} <span style="display: inline-block; padding: 2px 2px; border-radius: 3px; background: ${red}; font-size: .8em; color: ${white};">매니저</span>`),
+        line('3학년', `${num(4)} ${name('채치수')}<sup>C</sup>${sep}${num(5)} ${name('권준호')}<sup>VC</sup>${sep}${num(14)} ${name('정대만')}`),
+        line('2학년', [[6, '이달재'], [7, '송태섭'], [8, '신오일'], [9, '정병욱']].map(([n, p]) => `${num(n)} ${name(p)}`).join(sep)),
+        line('1학년', [[10, '강백호'], [11, '서태웅'], [12, '이호식'], [13, '이재훈'], [15, '오중식']].map(([n, p]) => `${num(n)} ${name(p)}`).join(sep)),
+        line('기타', ['채소연', '양호열', '김대남', '이용팔', '노구식', '유창수', '이영걸', '송희', '희정', '서태웅 팬클럽'].map(name).join(sep)),
+        [bandCell(' data-wiki-fold-end="1"', true), GENRE_HIDDEN],
+        [genreCell(entry, red, { colspan: 2 }), GENRE_HIDDEN],
+        [bandCell('', false), GENRE_HIDDEN]
+    ];
+    // 줄무늬 띠 줄은 두 칸을 합친 한 줄
+    rows[8][0].colspan = 2;
+    rows[10][0].colspan = 2;
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: red, bgColor: '#ffffff', widthPercent: 100, colWidths: ['20%', '80%'], cells: rows, rows: rows.length, cols: 2 };
+}
+
 const GENRES = [
     { id: 'bungo', name: '문호 스트레이독스', build: bungoPortMafiaTable },
     { id: 'mystic', name: '수상한 메신저', build: mysticMessengerTable },
@@ -1590,6 +1636,21 @@ const GENRES = [
 
     .wiki-genre-table[data-genre="arcana"] tr:nth-child(2) td div {
         font-size: 10px !important;
+    }
+}
+`
+    },
+    {
+        id: 'slamdunk', name: '슬램덩크', build: slamDunkTable,
+        // 줄무늬가 칸 가장자리까지 차도록 칸 안쪽 여백(6px 10px)을 폰에서도 그대로 둔다.
+        css: `
+@media (max-width: 767px) {
+    .wiki-genre-table[data-genre="slamdunk"] td {
+        padding: 6px 10px !important;
+    }
+
+    .wiki-genre-table[data-genre="slamdunk"] td.wiki-fold-cell {
+        padding: 0 !important;
     }
 }
 `
@@ -2378,6 +2439,13 @@ function foldLevel(marker) {
     return parseInt(marker.getAttribute('data-wiki-fold')) || 1;
 }
 
+// 접기를 끝내는 줄: 첫 칸 안에 data-wiki-fold-end가 붙은 요소가 있는 줄부터는 접히지 않는 보통 줄이다.
+// (접는 줄 뒤에 항상 보이는 줄이 더 이어지는 표에 쓴다.)
+function isFoldEnd(row) {
+    const cell = row.cells[0];
+    return !!(cell && cell.querySelector('[data-wiki-fold-end]'));
+}
+
 // 접는 줄은 <details>로 만들고, 접히는 줄들은 같은 칸 너비(colgroup)를 가진 안쪽 표에 담는다.
 function foldedRowsHTML(rows, colgroup) {
     let html = '';
@@ -2391,7 +2459,7 @@ function foldedRowsHTML(rows, colgroup) {
         let j = i + 1;
         while (j < rows.length) {
             const next = foldMarker(rows[j]);
-            if (next && foldLevel(next) <= level) break;
+            if ((next && foldLevel(next) <= level) || isFoldEnd(rows[j])) break;
             j++;
         }
         const cell = rows[i].cells[0];
