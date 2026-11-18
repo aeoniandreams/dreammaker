@@ -1433,9 +1433,78 @@ function haikyuKarasunoTable() {
     return { borderColor: INFO_BORDER_COLOR, outBorderColor: orange, bgColor: '#ffffff', widthPercent: 100, colWidths: ['20%', '16%', '16%', '16%', '16%', '16%'], cells: rows, rows: rows.length, cols: 6 };
 }
 
+// 애프터라이프 - 문서 맨 위의 표 두 개. 한 장르가 표 두 개를 만들므로 build()가 배열을 돌려준다.
+//  1) 로고 표: 로고와 소개 글, 메뉴 줄, 접는 "개별 문서가 있는 등장인물"(조별 이름, 처음엔 접힘).
+//  2) 사신지부 표: 초록 그라데이션 제목, 인물 이미지 4칸, 이름 줄. 이 사이트에서 더한 "메르" 칸(이미지 비움, 볼드)이 세이와 매니저 사이에 있다.
+// 이미지는 나무위키 이미지 서버 주소를 그대로 쓴다(안 보이면 칸 안에서 다른 주소로 바꾸면 된다).
+const AFTERLIFE_IMG = {
+    logo: 'https://i.namu.wiki/i/QGVxCD2jDerXM-Eydpgu4BpHyYARbMANmVZuXDsWsl9rSZR2nIbMWzaHEcoYPtMujbDoBPDp9fuVNBMfXIl_zfCDzf57qKwswAqR8U6U7dxq8dm7Oeg0vMBzJm6CnOCSC4QF8c3_36ina8pup_5Wyw.webp',
+    emblem: 'https://i.namu.wiki/i/RU3VDP0IhKh4RuqBvLNidWZ9FKNbWdkClZRM_GPizAwWzs_lovXxCXPG33-V0dWUduNy1fvtU1UDIELawHhXXw.webp',
+    nyang: 'https://i.namu.wiki/i/uoVQbV7bbmRsonuphYtYErAvufJkXzN9eby5ZBtRbX88H4X7B8z3TqWimjcJZElXUcJ6BhETRrPsmJ3aK-z2PGMT-9ueAF08wf7AQg-G2R4pIcUnxv4gdu_FbXrPeUQH6CkIIaFmLzP2oxlZhYg_Ow.webp',
+    say: 'https://i.namu.wiki/i/1pepFzlVcFXf2BfFXeQRjIGfYxkpGF5B6Zih4xg9Szy1uHwlLmN4Iv8B654J0b2Hir0wzcBkA7xg-5qW24Hi8v0s-Wow1SDyGtRmNM2vSOS4-cOrJrPUMaTxnNxE1GpAY5C0oPxWZIwbzB5WkZtPPA.webp',
+    manager: 'https://i.namu.wiki/i/G3buUrUFAej-XRsRbOzG8m76NEfSrilcnJmB1eRf0zhbsPiYLxeCnT9K8Fu-S-EWzorLfp-3nfVZFD-4IUOVuQ.webp'
+};
+
+function afterlifeTables() {
+    const white = '#ffffff';
+    const black = '#000000';
+    const mint = '#c0ece1';
+    const img = (src, style) => `<img src="${src}" referrerpolicy="no-referrer" style="display: block; ${style}">`;
+
+    // 1) 로고 표 (2칸: 27% / 73%)
+    const groups = [
+        ['아침조', ['엘', '제이미', '<u>기이</u>', '<u>리히트</u>']],
+        ['낮조', ['테오', '준', '루이', '에단']],
+        ['황혼조', ['시안', '시릴', '카티', '노아']],
+        ['밤조', ['나인', '데이', '키르', '아이타치']],
+        ['새벽조', ['유세프', '모리', '퀸시', '베린']],
+        ['기타', ['냥선배', '세이', '매니저', '<u>라이너</u>']]
+    ];
+    const logoCell = genreCenter(img(AFTERLIFE_IMG.logo, 'width: 150px; max-width: 100%; height: auto; margin: 0 auto 4px;') + '<span style="color: #0275d8;">애프터라이프, 소원을 담는 만화경!</span>');
+    const logoRows = [
+        genreFull(logoCell, white, 2),
+        genreFull(genreCenter('시스템 | 스토리 | 이벤트 | 등장인물&amp;기타 | 논란', black), white, 2),
+        genreFull(genreFold(1, '개별 문서가 있는 등장인물', black), white, 2),
+        ...groups.map(([label, names]) => [
+            genreCell(genreCenter(label, black), white),
+            genreCell(`<div style="text-align: left; color: ${black};">${names.join(' · ')}</div>`, white)
+        ])
+    ];
+    const logoTable = { borderColor: INFO_BORDER_COLOR, outBorderColor: white, bgColor: '#ffffff', widthPercent: 100, colWidths: ['27%', '73%'], cells: logoRows, rows: logoRows.length, cols: 2 };
+
+    // 2) 사신지부 표 (4칸 x 3줄). 이미지 칸은 위아래 여백이 없도록 칸 안쪽 여백만큼 음수 여백을 준다.
+    const header = `<div style="margin: -6px -10px; padding: 5px 10px; background-image: linear-gradient(to right, #c0ece1 10%, #04b486 50%, #c0ece1 90%);">`
+        + img(AFTERLIFE_IMG.emblem, 'width: 15%; min-width: 44px; height: auto; margin: 0 auto 2px;')
+        + `<div style="text-align: center; color: ${black};"><b>사신지부</b></div></div>`;
+    const portrait = src => genreCell(src ? `<div style="margin: -6px -10px;">${img(src, 'width: 100%; height: auto;')}</div>` : '', mint);
+    const nameCell = (html, color) => genreCell(genreCenter(html, color), mint);
+    const shinjiRows = [
+        genreFull(header, mint, 4),
+        [portrait(AFTERLIFE_IMG.nyang), portrait(AFTERLIFE_IMG.say), portrait(''), portrait(AFTERLIFE_IMG.manager)],
+        [nameCell('냥선배', '#453c57'), nameCell('세이', black), nameCell('<b>메르</b>', black), nameCell('매니저', '#453c57')]
+    ];
+    const shinjiTable = { borderColor: INFO_BORDER_COLOR, outBorderColor: white, bgColor: '#ffffff', widthPercent: 100, colWidths: ['25%', '25%', '25%', '25%'], cells: shinjiRows, rows: shinjiRows.length, cols: 4 };
+    return [logoTable, shinjiTable];
+}
+
 const GENRES = [
     { id: 'bungo', name: '문호 스트레이독스', build: bungoPortMafiaTable },
     { id: 'mystic', name: '수상한 메신저', build: mysticMessengerTable },
+    {
+        id: 'afterlife', name: '애프터라이프', build: afterlifeTables, titles: ['로고 표', '사신지부 표'],
+        // 이미지가 칸 가장자리까지 차도록 칸 안쪽 여백(6px 10px)을 폰에서도 그대로 둔다.
+        css: `
+@media (max-width: 767px) {
+    .wiki-genre-table[data-genre="afterlife"] td {
+        padding: 6px 10px !important;
+    }
+
+    .wiki-genre-table[data-genre="afterlife"] td.wiki-fold-cell {
+        padding: 0 !important;
+    }
+}
+`
+    },
     {
         id: 'haikyu', name: '하이큐', build: haikyuKarasunoTable,
         css: `
@@ -1478,13 +1547,20 @@ function currentGenreId() {
     return host && host.querySelector('.editable-table') ? (host.dataset.genre || '') : '';
 }
 
-// 장르 표 편집기를 만든다. genreData는 { id, table } 이고, 없으면 장르 없음(편집기 숨김).
+// 장르가 만드는 표 목록. 표 하나짜리 장르는 표 데이터 하나를, 여러 개인 장르는 배열을 돌려주도록 만들어 둔다.
+function genreTablesOf(genre) {
+    const built = genre.build();
+    return Array.isArray(built) ? built : [built];
+}
+
+// 장르 표 편집기를 만든다. genreData는 { id, tables: [표...] }(예전 저장본은 { id, table })이고, 없으면 장르 없음(편집기 숨김).
 function buildGenreEditor(genreData) {
     const host = document.getElementById('genre-editor');
     const area = document.getElementById('genre-editor-area');
     const select = document.getElementById('genreSelect');
     basicSavedRange = null;
-    if (!genreData || !genreData.table || !genreData.table.cells) {
+    const tables = genreData ? (genreData.tables || (genreData.table ? [genreData.table] : [])) : [];
+    if (tables.length === 0 || !tables.every(t => t && t.cells)) {
         host.innerHTML = '';
         delete host.dataset.genre;
         area.hidden = true;
@@ -1502,9 +1578,17 @@ function buildGenreEditor(genreData) {
             select.appendChild(o);
         }
     }
-    const d = genreData.table;
-    host.innerHTML = buildTableWrapHTML(d, d.rows || d.cells.length, d.cols || (d.colWidths || []).length || 2, { info: true });
-    initTableBlock(host);
+    const genre = GENRES.find(g => g.id === id);
+    host.innerHTML = '';
+    tables.forEach((d, i) => {
+        const part = document.createElement('div');
+        part.className = 'genre-part';
+        const title = genre && genre.titles ? genre.titles[i] : '';
+        part.innerHTML = (title ? `<div class="genre-part-title">${title}</div>` : '')
+            + buildTableWrapHTML(d, d.rows || d.cells.length, d.cols || (d.colWidths || []).length || 2, { info: true });
+        host.appendChild(part);
+        initTableBlock(part);
+    });
     host.dataset.genre = id;
     area.hidden = false;
     select.value = id;
@@ -1520,16 +1604,17 @@ function onGenreChange() {
         return;
     }
     const genre = GENRES.find(g => g.id === id);
-    buildGenreEditor(genre ? { id, table: genre.build() } : null);
+    buildGenreEditor(genre ? { id, tables: genreTablesOf(genre) } : null);
     debouncedGenerateHTML();
 }
 
 function generateGenreTableHTML() {
-    const tbl = document.querySelector('#genre-editor .editable-table');
-    if (!tbl) return '';
-    const id = document.getElementById('genre-editor').dataset.genre || '';
-    const outer = tbl.dataset.outBorderColor || tbl.dataset.borderColor || GENRE_BLACK;
-    return tableOutputHTML(tbl, `<table class="wiki-genre-table" data-genre="${id}" style="table-layout: fixed; border: 2px solid ${outer};">`, { folds: true });
+    const host = document.getElementById('genre-editor');
+    const id = host.dataset.genre || '';
+    return Array.from(host.querySelectorAll('.editable-table')).map(tbl => {
+        const outer = tbl.dataset.outBorderColor || tbl.dataset.borderColor || GENRE_BLACK;
+        return tableOutputHTML(tbl, `<table class="wiki-genre-table" data-genre="${id}" style="table-layout: fixed; border: 2px solid ${outer};">`, { folds: true });
+    }).join('\n    ');
 }
 
 function buildInfoEditor(infoData) {
@@ -2469,39 +2554,42 @@ function parseWikiHTML(raw) {
     if (mainColor) data.mainColor = mainColor; else warnings.push('색상 정보(<style>)가 없어 테마 색상은 현재 값을 그대로 뒀어요.');
     if (textColor) data.nameTextColor = textColor;
 
-    // 장르 표(캐릭터 정보 표 위): 있으면 그대로 편집 가능한 표로 복원한다.
-    const genreTable = wrap.querySelector('table.wiki-genre-table');
-    if (genreTable) {
-        // 접는 줄(<details>)은 안쪽 표의 줄들과 함께 펼쳐서 한 표로 되돌린다.
-        const proxy = doc.createElement('table');
-        const tbody = doc.createElement('tbody');
-        const colgroupEl = genreTable.querySelector(':scope > colgroup');
-        if (colgroupEl) proxy.appendChild(colgroupEl.cloneNode(true));
-        proxy.appendChild(tbody);
-        const flatten = (table) => {
-            Array.from(table.querySelectorAll(':scope > tbody > tr, :scope > tr')).forEach(tr => {
-                const details = tr.cells.length === 1 ? tr.cells[0].querySelector(':scope > details.wiki-fold') : null;
-                if (!details) {
-                    tbody.appendChild(tr.cloneNode(true));
-                    return;
-                }
-                const markerRow = doc.createElement('tr');
-                const markerCell = tr.cells[0].cloneNode(false);
-                markerCell.innerHTML = details.querySelector(':scope > summary')?.innerHTML || '';
-                markerRow.appendChild(markerCell);
-                tbody.appendChild(markerRow);
-                const innerTable = details.querySelector(':scope > table.wiki-fold-table');
-                if (innerTable) flatten(innerTable);
-            });
-        };
-        flatten(genreTable);
-        proxy.querySelectorAll('td, th').forEach(c => { c.innerHTML = restoreFn(c.innerHTML); });
-        const outInline = /(?:^|;)\s*border:\s*2px solid\s*([^;]+)/.exec(genreTable.getAttribute('style') || '');
-        proxy.dataset.borderColor = cssColorToHex(genreTable.querySelector('td, th')?.style.borderColor, INFO_BORDER_COLOR);
-        proxy.dataset.outBorderColor = (outInline ? cssColorToHex(outInline[1], '') : '') || GENRE_BLACK;
-        proxy.dataset.bgColor = '#ffffff';
-        proxy.dataset.widthPct = '100';
-        data.genre = { id: genreTable.getAttribute('data-genre') || '', table: serializeTableForSave(proxy) };
+    // 장르 표(캐릭터 정보 표 위): 있으면 그대로 편집 가능한 표로 복원한다. 표가 여러 개면 모두 복원한다.
+    const genreTables = Array.from(wrap.querySelectorAll('table.wiki-genre-table'));
+    if (genreTables.length > 0) {
+        const tables = genreTables.map(genreTable => {
+            // 접는 줄(<details>)은 안쪽 표의 줄들과 함께 펼쳐서 한 표로 되돌린다.
+            const proxy = doc.createElement('table');
+            const tbody = doc.createElement('tbody');
+            const colgroupEl = genreTable.querySelector(':scope > colgroup');
+            if (colgroupEl) proxy.appendChild(colgroupEl.cloneNode(true));
+            proxy.appendChild(tbody);
+            const flatten = (table) => {
+                Array.from(table.querySelectorAll(':scope > tbody > tr, :scope > tr')).forEach(tr => {
+                    const details = tr.cells.length === 1 ? tr.cells[0].querySelector(':scope > details.wiki-fold') : null;
+                    if (!details) {
+                        tbody.appendChild(tr.cloneNode(true));
+                        return;
+                    }
+                    const markerRow = doc.createElement('tr');
+                    const markerCell = tr.cells[0].cloneNode(false);
+                    markerCell.innerHTML = details.querySelector(':scope > summary')?.innerHTML || '';
+                    markerRow.appendChild(markerCell);
+                    tbody.appendChild(markerRow);
+                    const innerTable = details.querySelector(':scope > table.wiki-fold-table');
+                    if (innerTable) flatten(innerTable);
+                });
+            };
+            flatten(genreTable);
+            proxy.querySelectorAll('td, th').forEach(c => { c.innerHTML = restoreFn(c.innerHTML); });
+            const outInline = /(?:^|;)\s*border:\s*2px solid\s*([^;]+)/.exec(genreTable.getAttribute('style') || '');
+            proxy.dataset.borderColor = cssColorToHex(genreTable.querySelector('td, th')?.style.borderColor, INFO_BORDER_COLOR);
+            proxy.dataset.outBorderColor = (outInline ? cssColorToHex(outInline[1], '') : '') || GENRE_BLACK;
+            proxy.dataset.bgColor = '#ffffff';
+            proxy.dataset.widthPct = '100';
+            return serializeTableForSave(proxy);
+        });
+        data.genre = { id: genreTables[0].getAttribute('data-genre') || '', tables };
     }
 
     // 정보 표: 직접 편집하는 표(현재 형식)와, 이름·이미지·상세 프로필 입력칸으로 만든 예전 형식을 구분한다.
@@ -3431,9 +3519,9 @@ function collectSaveData() {
         return tbl ? Object.assign(serializeTableForSave(tbl), { outBorderColor: tbl.dataset.outBorderColor || '' }) : null;
     })(),
     genre: (() => {
-        const tbl = document.querySelector('#genre-editor .editable-table');
-        if (!tbl) return null;
-        return { id: document.getElementById('genre-editor').dataset.genre || '', table: serializeTableForSave(tbl) };
+        const tables = Array.from(document.querySelectorAll('#genre-editor .editable-table'));
+        if (tables.length === 0) return null;
+        return { id: document.getElementById('genre-editor').dataset.genre || '', tables: tables.map(serializeTableForSave) };
     })(),
     categories: Array.from(document.querySelectorAll("#category-list .category-row")).map(row => ({
         text: row.querySelector(".cat-text").value,

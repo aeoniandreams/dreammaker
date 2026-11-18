@@ -365,6 +365,17 @@ input::placeholder { color: var(--text-3); }
   color: var(--text-3);
 }
 
+.genre-part + .genre-part {
+  margin-top: 8px;
+}
+
+.genre-part-title {
+  padding: 6px 1.25rem 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
 #info-editor {
   padding: 0.25rem 0 0.5rem;
 }
