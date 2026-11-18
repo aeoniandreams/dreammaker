@@ -1421,7 +1421,7 @@ function haikyuKarasunoTable() {
         [label('1학년'), person('히나타', '쇼요'), person('카게야마', '토비오'), person('츠키시마', '케이'), person('야마구치', '타다시'), blank()],
         [label('2학년'), person('니시노야', '유'), person('타나카', '류노스케'), person('엔노시타', '치카라'), person('키노시타', '히사시'), person('나리타', '카즈히토')],
         [label('3학년'), person('사와무라', '다이치'), person('스가와라', '코시'), person('아즈마네', '아사히'), blank(), blank()],
-        [label('스태프'), person('우카이', '케이신'), person('타케다', '잇테츠'), person('시미즈', '키요코'), person('야치', '히토카'), blank()],
+        [label('스태프'), person('우카이', '케이신'), person('타케다', '잇테츠'), person('시미즈', '키요코'), person('키세키', '유우'), person('야치', '히토카')],
         genreFull(genreCenter('<b>개별 문서가 있는 관련 인물</b>', orange), navy, 6),
         [genreCell('', white, { rowspan: 2 }), person('우카이', '잇케이'), person('시마다', '마코토'), person('타키노우에', '유스케'), person('츠키시마', '아키테루'), person('작은', '거인')],
         [hidden, person('타나카', '사에코'), person('타시로', '히데미'), person('쿠로카와', '히로키'), person('미치미야', '유이'), person('히나타', '나츠')]
