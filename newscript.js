@@ -1568,7 +1568,7 @@ function slamDunkTable() {
         + `<b>북산</b> (상북ㆍ신성)</div></div>`;
     const bandCell = (extraAttr, top) => genreCell(
         `<div${extraAttr} style="margin: -6px -10px; padding: 5px 10px; min-height: 1em; background-image: ${band};${top ? ` border-top: 1px solid ${red};` : ''}"></div>`, white);
-    const entry = `<div style="text-align: center; color: ${white}; font-size: .85em;">슈퍼슬램 북산(상북) 엔트리<br>채치수 · <u>정대만</u> (권준호) · 송태섭 (이달재) · 강백호 · 서태웅</div>`;
+    const entry = `<div style="text-align: center; color: ${white}; font-size: .85em;">슈퍼슬램 북산(상북) 엔트리<br>채치수 · 정대만 (권준호) · 송태섭 (이달재) · 강백호 · 서태웅</div>`;
 
     const rows = [
         genreFull(header, red, 2),
