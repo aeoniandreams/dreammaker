@@ -1508,6 +1508,35 @@ function afterlifeTables() {
     return [logoTable, shinjiTable];
 }
 
+// 아르카나 트와일라잇 - 공략 캐릭터 표: 보라 그라데이션 제목줄 + 인물 이미지(50px)와 이름이 든 6칸(접는 줄 없음).
+// 폰에서는 6칸이 좁아 칸 안쪽 여백을 줄이는 CSS(css)를 이 장르를 쓸 때만 코드에 넣는다. 제목줄만 여백을 그대로 둔다.
+const ARCANA_IMG = {
+    arcturus: 'https://i.namu.wiki/i/iNbLZ9OUhH3kHBD4u3KNQVCw0klRLj8BL_1LqIYjmaH5t_2P6VlLejOvjyGt1ClXCbOj1C2M1VOwmYKVih994N9vhuRgvnTEO32K93UY3Jh7hrbVWHOCtg_0HlV3wqKRrMz1Z0_Pf_R9ClLIUfh4DQ.webp',
+    spica: 'https://i.namu.wiki/i/silcBlK3vSR2Bf05TYiQ0eD4YNlvlqGQgIBM6qj3xcBWTBhoWJZIBvOkQvvGuYlm-F2dFVBEAfFN90NOqWnXst2gN_ybtLNzQFuVl_WOZkEjMDf4Yp59umCVJzlGII7Bjd-m8A4Ql9eCd0GrKVvpWA.webp',
+    vega: 'https://i.namu.wiki/i/PUacVZyJIb0dLU6dXsrMJ3XklRI0UF9hKcqyOUt98Go7j-fmkPM96LjICPK1nhy-n_-mK9NEe96g-f-7iGUCxilipTZjOYkRumQb2qSYJxf5Fzlu2yrizvQ3ruLP9zQTxZuCVEXvnpt6fvUBiJ07aA.webp',
+    alphard: 'https://i.namu.wiki/i/U0RP7MD255qphd4J0RUXL3yGVlYfUpJkCU0j8VGpQO-4tWO32snNG3NCyvewcViYSkF40FViBhXcCBl-M8GkJ4FGNwtzncgrSIazxmBQgENWtnZGjhR_PtfAoNcIDZTdX1ETL7OYUXbamipxZPN9QQ.webp',
+    pollux: 'https://i.namu.wiki/i/GhsgYHtA_yt1prQhHDN-B-BpcqLMtImaBynW04Xn-BhK1-rJCxgLxLC8zX-uIclEFtb2s1MD9DO_7yiXfth7OgfZW9ymiy_0o6RhWRktKW6diDjlC7xWloM3RC2WqD36wpeO1lwmhgM9Q_ZWCv9FeQ.webp',
+    sirius: 'https://i.namu.wiki/i/DNof7T7oBoZh7kMp9iTMD7M16PALJ9iX7letYogl-EFHrVidBtYFUtggVQa5B_oXmj0iSmXlvNbwigK2RIeEXTyo-PtvoGd5tBRKsCwA5PIpZeA7h9inrr0q4thhxvXbJw_O8kGt3zXtrTXnj2pzBQ.webp'
+};
+
+function arcanaTwilightTable() {
+    const white = '#ffffff';
+    const purple = '#a83ffc';
+    const header = `<div style="margin: -6px -10px; padding: 5px 10px; background-image: linear-gradient(to right, #A83FFC, #8443FF, #9397FF);">`
+        + genreCenter('<b>아르카나 트와일라잇의 공략 캐릭터</b>', white) + '</div>';
+    const person = (name, src) => genreCell(
+        `<div style="text-align: center; color: ${GENRE_BLACK}; font-size: 11px; line-height: 1.5;">`
+        + `<img src="${src}" referrerpolicy="no-referrer" style="display: block; width: 50px; max-width: 100%; height: auto; margin: 0 auto 2px;">${name}</div>`, white);
+    const rows = [
+        genreFull(header, white, 6),
+        [
+            person('아크투루스', ARCANA_IMG.arcturus), person('스피카', ARCANA_IMG.spica), person('베가', ARCANA_IMG.vega),
+            person('알페라츠', ARCANA_IMG.alphard), person('폴룩스', ARCANA_IMG.pollux), person('시리우스', ARCANA_IMG.sirius)
+        ]
+    ];
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: purple, bgColor: '#ffffff', widthPercent: 100, colWidths: ['16.66%', '16.67%', '16.67%', '16.67%', '16.67%', '16.66%'], cells: rows, rows: rows.length, cols: 6 };
+}
+
 const GENRES = [
     { id: 'bungo', name: '문호 스트레이독스', build: bungoPortMafiaTable },
     { id: 'mystic', name: '수상한 메신저', build: mysticMessengerTable },
@@ -1533,6 +1562,20 @@ const GENRES = [
     .wiki-genre-table[data-genre="haikyu"] .wiki-fold-table td {
         font-size: 11px;
         padding: 4px 2px !important;
+    }
+}
+`
+    },
+    {
+        id: 'arcana', name: '아르카나 트와일라잇', build: arcanaTwilightTable,
+        css: `
+@media (max-width: 767px) {
+    .wiki-genre-table[data-genre="arcana"] td {
+        padding: 4px 2px !important;
+    }
+
+    .wiki-genre-table[data-genre="arcana"] tr:first-child td {
+        padding: 6px 10px !important;
     }
 }
 `
