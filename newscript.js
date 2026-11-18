@@ -1527,14 +1527,20 @@ function arcanaTwilightTable() {
     const person = (name, src) => genreCell(
         `<div style="text-align: center; color: ${GENRE_BLACK}; font-size: 11px; line-height: 1.5;">`
         + `<img src="${src}" referrerpolicy="no-referrer" style="display: block; width: 50px; max-width: 100%; height: auto; margin: 0 auto 2px;">${name}</div>`, white);
+    // 오른쪽 7번째 열(2행 x 1열): 위는 "소환사"(제목줄 그라데이션의 끝 색), 아래는 이미지 자리(비움)와 굵은 "르네"
+    const summoner = genreCell(genreCenter('<b>소환사</b>', white), '#9397FF');
+    const rene = genreCell(
+        `<div style="text-align: center; color: ${GENRE_BLACK}; font-size: 11px; line-height: 1.5;">`
+        + `<div style="width: 50px; max-width: 100%; height: 50px; margin: 0 auto 2px;"></div><b>르네</b></div>`, white);
     const rows = [
-        genreFull(header, white, 6),
+        [genreCell(header, white, { colspan: 6 }), ...Array(5).fill(GENRE_HIDDEN), summoner],
         [
             person('아크투루스', ARCANA_IMG.arcturus), person('스피카', ARCANA_IMG.spica), person('베가', ARCANA_IMG.vega),
-            person('알페라츠', ARCANA_IMG.alphard), person('폴룩스', ARCANA_IMG.pollux), person('시리우스', ARCANA_IMG.sirius)
+            person('알페라츠', ARCANA_IMG.alphard), person('폴룩스', ARCANA_IMG.pollux), person('시리우스', ARCANA_IMG.sirius),
+            rene
         ]
     ];
-    return { borderColor: INFO_BORDER_COLOR, outBorderColor: purple, bgColor: '#ffffff', widthPercent: 100, colWidths: ['16.66%', '16.67%', '16.67%', '16.67%', '16.67%', '16.66%'], cells: rows, rows: rows.length, cols: 6 };
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: purple, bgColor: '#ffffff', widthPercent: 100, colWidths: ['14.28%', '14.28%', '14.28%', '14.29%', '14.29%', '14.29%', '14.29%'], cells: rows, rows: rows.length, cols: 7 };
 }
 
 const GENRES = [
@@ -1574,8 +1580,16 @@ const GENRES = [
         padding: 4px 2px !important;
     }
 
-    .wiki-genre-table[data-genre="arcana"] tr:first-child td {
+    .wiki-genre-table[data-genre="arcana"] tr:first-child td:first-child {
         padding: 6px 10px !important;
+    }
+
+    .wiki-genre-table[data-genre="arcana"] tr:first-child td:last-child {
+        font-size: 12px;
+    }
+
+    .wiki-genre-table[data-genre="arcana"] tr:nth-child(2) td div {
+        font-size: 10px !important;
     }
 }
 `
