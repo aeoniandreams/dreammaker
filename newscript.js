@@ -1568,17 +1568,17 @@ function slamDunkTable() {
         + `<b>북산</b> (상북ㆍ신성)</div></div>`;
     const bandCell = (extraAttr, top) => genreCell(
         `<div${extraAttr} style="margin: -6px -10px; padding: 5px 10px; min-height: 1em; background-image: ${band};${top ? ` border-top: 1px solid ${red};` : ''}"></div>`, white);
-    const entry = `<div style="text-align: center; color: ${white}; font-size: .85em;">슈퍼슬램 북산(상북) 엔트리<br>채치수 · 정대만 (권준호) · 송태섭 (이달재) · 강백호 · 서태웅</div>`;
+    const entry = `<div style="text-align: center; color: ${white}; font-size: .85em;">슈퍼슬램 북산(상북) 엔트리<br>채치수 · <u>정대만</u> (권준호) · 송태섭 (이달재) · 강백호 · 서태웅</div>`;
 
     const rows = [
         genreFull(header, red, 2),
         genreFull(genreFold(1, '[ 펼치기 · 접기 ]', red), white, 2),
         line('감독', name('안한수')),
         line('스태프', `${name('이한나')} <span style="display: inline-block; padding: 2px 2px; border-radius: 3px; background: ${red}; font-size: .8em; color: ${white};">매니저</span>`),
-        line('3학년', `${num(4)} ${name('채치수')}<sup>C</sup>${sep}${num(5)} ${name('권준호')}<sup>VC</sup>${sep}${num(14)} ${name('정대만')}`),
+        line('3학년', `${num(4)} ${name('채치수')}<sup>C</sup>${sep}${num(5)} ${name('권준호')}<sup>VC</sup>${sep}${num(14)} ${name('<u>정대만</u>')}`),
         line('2학년', [[6, '이달재'], [7, '송태섭'], [8, '신오일'], [9, '정병욱']].map(([n, p]) => `${num(n)} ${name(p)}`).join(sep)),
         line('1학년', [[10, '강백호'], [11, '서태웅'], [12, '이호식'], [13, '이재훈'], [15, '오중식']].map(([n, p]) => `${num(n)} ${name(p)}`).join(sep)),
-        line('기타', ['채소연', '양호열', '김대남', '이용팔', '노구식', '유창수', '이영걸', '송희', '희정', '서태웅 팬클럽'].map(name).join(sep)),
+        line('기타', ['채소연', '양호열', '<b>윤하리</b>', '김대남', '이용팔', '노구식', '유창수', '이영걸', '송희', '희정', '서태웅 팬클럽'].map(name).join(sep)),
         [bandCell(' data-wiki-fold-end="1"', true), GENRE_HIDDEN],
         [genreCell(entry, red, { colspan: 2 }), GENRE_HIDDEN],
         [bandCell('', false), GENRE_HIDDEN]
