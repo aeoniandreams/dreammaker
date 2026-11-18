@@ -689,7 +689,7 @@ details[open] .wiki-h3-icon ion-icon {
     line-height: var(--wiki-line-height);
     font-weight: normal !important;
 }
-</style>
+${genreExtraCSS()}</style>
 <div id="wikiwrap">
   ${titleTimeHTML}
   ${categoryHTML}
@@ -1404,10 +1404,54 @@ function mysticMessengerTable() {
     return { borderColor: INFO_BORDER_COLOR, outBorderColor: '#ffffff', bgColor: '#ffffff', widthPercent: 100, colWidths: ['50%', '50%'], cells: rows, rows: rows.length, cols: 2 };
 }
 
+// 하이큐 - 카라스노 고교 표: 주황 제목줄, 접는 줄, 학년/스태프별 이름표(6칸: 20% + 16% x 5), 개별 문서가 있는 관련 인물.
+// 맨 아래 학교 이름 줄(카라스노 · 아오바죠사이 ...)은 만들지 않는다. 관련 인물의 5칸은 위쪽 이름 칸에 맞춰 2~6번째 칸에 둔다.
+// 폰에서는 6칸이 좁아 글자를 줄이는 CSS(css)를 이 장르를 쓸 때만 코드에 넣는다.
+function haikyuKarasunoTable() {
+    const navy = '#0e0e32';
+    const orange = '#ffa500';
+    const white = '#ffffff';
+    const hidden = GENRE_HIDDEN;
+    const label = text => genreCell(genreCenter(`<b>${text}</b>`, orange), navy);
+    const person = (family, given) => genreCell(genreCenter(`${family}<br>${given}`, '#ffa560'), white);
+    const blank = () => genreCell('', white);
+    const rows = [
+        genreFull(genreCenter('<b>카라스노 고교</b>', navy), orange, 6),
+        genreFull(genreFold(1, '[ 펼치기 · 접기 ]', orange), navy, 6),
+        [label('1학년'), person('히나타', '쇼요'), person('카게야마', '토비오'), person('츠키시마', '케이'), person('야마구치', '타다시'), blank()],
+        [label('2학년'), person('니시노야', '유'), person('타나카', '류노스케'), person('엔노시타', '치카라'), person('키노시타', '히사시'), person('나리타', '카즈히토')],
+        [label('3학년'), person('사와무라', '다이치'), person('스가와라', '코시'), person('아즈마네', '아사히'), blank(), blank()],
+        [label('스태프'), person('우카이', '케이신'), person('타케다', '잇테츠'), person('시미즈', '키요코'), person('야치', '히토카'), blank()],
+        genreFull(genreCenter('<b>개별 문서가 있는 관련 인물</b>', orange), navy, 6),
+        [genreCell('', white, { rowspan: 2 }), person('우카이', '잇케이'), person('시마다', '마코토'), person('타키노우에', '유스케'), person('츠키시마', '아키테루'), person('작은', '거인')],
+        [hidden, person('타나카', '사에코'), person('타시로', '히데미'), person('쿠로카와', '히로키'), person('미치미야', '유이'), person('히나타', '나츠')]
+    ];
+    return { borderColor: INFO_BORDER_COLOR, outBorderColor: orange, bgColor: '#ffffff', widthPercent: 100, colWidths: ['20%', '16%', '16%', '16%', '16%', '16%'], cells: rows, rows: rows.length, cols: 6 };
+}
+
 const GENRES = [
     { id: 'bungo', name: '문호 스트레이독스', build: bungoPortMafiaTable },
-    { id: 'mystic', name: '수상한 메신저', build: mysticMessengerTable }
+    { id: 'mystic', name: '수상한 메신저', build: mysticMessengerTable },
+    {
+        id: 'haikyu', name: '하이큐', build: haikyuKarasunoTable,
+        css: `
+@media (max-width: 767px) {
+    .wiki-genre-table[data-genre="haikyu"] .wiki-fold-table td {
+        font-size: 11px;
+        padding: 4px 2px !important;
+    }
+}
+`
+    }
 ];
+
+// 지금 고른 장르가 따로 필요로 하는 CSS(있을 때만). 생성되는 코드의 <style> 끝에 붙는다.
+function genreExtraCSS() {
+    const host = document.getElementById('genre-editor');
+    if (!host || !host.querySelector('.editable-table')) return '';
+    const genre = GENRES.find(g => g.id === host.dataset.genre);
+    return genre && genre.css ? genre.css : '';
+}
 
 function renderGenreOptions() {
     const select = document.getElementById('genreSelect');
