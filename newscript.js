@@ -287,6 +287,27 @@ let rawHTML = `
     margin: 0;
 }
 
+/* 접기·펼치기 애니메이션(새 브라우저에서만 움직이고, 지원하지 않으면 예전처럼 바로 열리고 닫힌다) */
+.wiki-genre-table details.wiki-fold {
+    interpolate-size: allow-keywords;
+}
+
+.wiki-genre-table details.wiki-fold::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition: block-size 0.3s ease, content-visibility 0.3s allow-discrete;
+}
+
+.wiki-genre-table details.wiki-fold[open]::details-content {
+    block-size: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wiki-genre-table details.wiki-fold::details-content {
+        transition: none;
+    }
+}
+
 @media (max-width: 767px) {
     .wiki-genre-table td,
     .wiki-genre-table th {
