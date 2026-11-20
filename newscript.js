@@ -1426,17 +1426,24 @@ function mysticMessengerTable() {
     const base = '#1f2023';
     const logo = genreCenter(`<img src="${MYSTIC_LOGO}" alt="수상한 메신저 로고" referrerpolicy="no-referrer" style="display: block; width: 320px; max-width: 100%; height: auto; margin: 0 auto 4px;"><span style="color: ${gold};">수상한 메신저</span>`);
     const menu = genreCenter(['등장인물', '설정', '사건 사고', 'DLC', '웹툰'].map(w => `<span style="color: ${gold};">${w}</span>`).join(' <span style="color: #ffffff;">·</span> '));
-    const person = (name, cv, bg, color) => genreCell(genreCenter(`<b>${name}</b><br>(CV. ${cv})`, color), bg);
+    // 이름에는 나무위키 문서 링크(새 창 · 글씨 색 유지)를 건다. 주소가 없는 인물은 링크 없이 둔다.
+    const wiki = n => `https://namu.wiki/w/${n}`;
+    const person = (name, cv, bg, color, url) => genreCell(genreCenter(`<b>${url ? genreLink(url, name) : name}</b><br>(CV. ${cv})`, color), bg);
     // 인물은 2칸 x 5줄(10명). 가운데 윤가을은 이 사이트에서 더한 가상의 항목이라 CV 자리에 "가상 CV: ?"를 적었다.
     const rows = [
         genreFull(logo, base, 2),
         genreFull(menu, base, 2),
         genreFull(genreFold(1, '▼ 개별 문서가 있는 등장인물 ▼', gold), base, 2),
-        [person('ZEN', '김장', '#f5f5f5', '#ed0000'), person('강제희', '양정화', '#f2cb61', '#993800')],
-        [person('유성★', '심규혁', '#1ddb16', '#ffff24'), person('한주민', '신용우', '#d1b2ff', '#151278')],
-        [person('707', '김영선', '#db0000', '#ffd700'), person('V', '이호산', '#d4f4fa', '#4fc9de')],
-        [person('리카', '이현진', '#faf4c0', '#f2cb61'), person('레이/Unknown', '강수진', '#e8ffff', '#bd2470')],
-        [genreCell(genreCenter('<b>윤가을</b><br>(가상 CV: ?)', '#a04a00'), '#ffd9b3'), person('메리 벤더우드 3세', '이규창', '#1b0007', '#bd24a9')]
+        [person('ZEN', '김장', '#f5f5f5', '#ed0000', wiki('ZEN(%EC%88%98%EC%83%81%ED%95%9C%20%EB%A9%94%EC%8B%A0%EC%A0%80)')),
+            person('강제희', '양정화', '#f2cb61', '#993800', wiki('%EA%B0%95%EC%A0%9C%ED%9D%AC(%EC%88%98%EC%83%81%ED%95%9C%20%EB%A9%94%EC%8B%A0%EC%A0%80)'))],
+        [person('유성★', '심규혁', '#1ddb16', '#ffff24', wiki('%EC%9C%A0%EC%84%B1%E2%98%85')),
+            person('한주민', '신용우', '#d1b2ff', '#151278', wiki('%ED%95%9C%EC%A3%BC%EB%AF%BC'))],
+        [person('707', '김영선', '#db0000', '#ffd700', wiki('707(%EC%88%98%EC%83%81%ED%95%9C%20%EB%A9%94%EC%8B%A0%EC%A0%80)')),
+            person('V', '이호산', '#d4f4fa', '#4fc9de', wiki('V(%EC%88%98%EC%83%81%ED%95%9C%20%EB%A9%94%EC%8B%A0%EC%A0%80)'))],
+        [person('리카', '이현진', '#faf4c0', '#f2cb61', wiki('%EB%A6%AC%EC%B9%B4(%EC%88%98%EC%83%81%ED%95%9C%20%EB%A9%94%EC%8B%A0%EC%A0%80)')),
+            person('레이/Unknown', '강수진', '#e8ffff', '#bd2470', wiki('%EB%A0%88%EC%9D%B4(%EC%88%98%EC%83%81%ED%95%9C%20%EB%A9%94%EC%8B%A0%EC%A0%80)'))],
+        [genreCell(genreCenter('<b>윤가을</b><br>(가상 CV: ?)', '#a04a00'), '#ffd9b3'),
+            person('메리 벤더우드 3세', '이규창', '#1b0007', '#bd24a9', wiki('%EB%B2%A4%EB%8D%94%EC%9A%B0%EB%93%9C'))]
     ];
     return { borderColor: INFO_BORDER_COLOR, outBorderColor: '#ffffff', bgColor: '#ffffff', widthPercent: 100, colWidths: ['50%', '50%'], cells: rows, rows: rows.length, cols: 2 };
 }
