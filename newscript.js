@@ -1533,7 +1533,7 @@ function arcanaTwilightTable() {
     const summoner = genreCell(genreCenter('<b>소환사</b>', white), '#9397FF');
     const rene = genreCell(
         `<div style="text-align: center; color: ${GENRE_BLACK}; font-size: 11px; line-height: 1.5;">`
-        + `<img src="${ARCANA_IMG.rene}" referrerpolicy="no-referrer" style="display: block; width: 50px; max-width: 100%; height: auto; margin: 0 auto 2px;"><b>르네</b></div>`, white);
+        + `<img src="${ARCANA_IMG.rene}" referrerpolicy="no-referrer" style="display: block; width: 45px; max-width: 100%; height: auto; margin: 2px auto 4px;"><b>르네</b></div>`, white);
     const rows = [
         [genreCell(header, white, { colspan: 6 }), ...Array(5).fill(GENRE_HIDDEN), summoner],
         [
