@@ -1425,7 +1425,13 @@ function mysticMessengerTable() {
     const gold = '#fccd63';
     const base = '#1f2023';
     const logo = genreCenter(`<img src="${MYSTIC_LOGO}" alt="수상한 메신저 로고" referrerpolicy="no-referrer" style="display: block; width: 320px; max-width: 100%; height: auto; margin: 0 auto 4px;"><span style="color: ${gold};">수상한 메신저</span>`);
-    const menu = genreCenter(['등장인물', '설정', '사건 사고', 'DLC', '웹툰'].map(w => `<span style="color: ${gold};">${w}</span>`).join(' <span style="color: #ffffff;">·</span> '));
+    // 메뉴 글자 중 주소가 있는 것(등장인물, 설정, DLC)은 나무위키 문서 링크(새 창 · 글씨 색 유지)를 건다.
+    const menuLinks = {
+        '등장인물': 'https://namu.wiki/w/%EC%88%98%EC%83%81%ED%95%9C%20%EB%A9%94%EC%8B%A0%EC%A0%80/%EB%93%B1%EC%9E%A5%EC%9D%B8%EB%AC%BC',
+        '설정': 'https://namu.wiki/w/%EB%AF%BC%ED%8A%B8%EC%95%84%EC%9D%B4',
+        'DLC': 'https://namu.wiki/w/%EC%88%98%EC%83%81%ED%95%9C%20%EB%A9%94%EC%8B%A0%EC%A0%80/DLC'
+    };
+    const menu = genreCenter(['등장인물', '설정', '사건 사고', 'DLC', '웹툰'].map(w => `<span style="color: ${gold};">${menuLinks[w] ? genreLink(menuLinks[w], w) : w}</span>`).join(' <span style="color: #ffffff;">·</span> '));
     // 이름에는 나무위키 문서 링크(새 창 · 글씨 색 유지)를 건다. 주소가 없는 인물은 링크 없이 둔다.
     const wiki = n => `https://namu.wiki/w/${n}`;
     const person = (name, cv, bg, color, url) => genreCell(genreCenter(`<b>${url ? genreLink(url, name) : name}</b><br>(CV. ${cv})`, color), bg);
