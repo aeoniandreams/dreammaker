@@ -1356,6 +1356,12 @@ function genreCenter(html, color) {
     return `<div style="text-align: center;${color ? ` color: ${color};` : ''}">${html}</div>`;
 }
 
+// 장르 표 안의 링크: 새 창으로 열리고, 글씨 색은 링크 색(파랑)이 아니라 둘러싼 글씨 색을 그대로 따른다.
+// 블로그 스킨이 링크 색을 !important로 덮어도 이기도록 색을 칸 안의 링크 태그에 직접 지정한다.
+function genreLink(url, html) {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: inherit !important; text-decoration: none;">${html}</a>`;
+}
+
 // 접는 줄 표시(data-wiki-fold). 접는 표는 처음에 모두 접힌 상태로 시작한다(나무위키와 같음).
 function genreFold(level, text, color) {
     return `<div data-wiki-fold="${level}" style="text-align: center;${color ? ` color: ${color};` : ''}"><b>${text}</b></div>`;
@@ -1374,6 +1380,16 @@ function bungoPortMafiaTable() {
     const fold = genreFold;
     const names = list => genreCenter(list.join(' ・ '), '#000000');
     const underline = name => `<u>${name}</u>`;
+    const linked = (url, html) => genreLink(url, html);
+    // 나무위키 문서 링크(새 창 · 글씨 색 유지). 이름을 눌렀을 때 열리는 곳이다.
+    const links = {
+        mori: 'https://namu.wiki/w/%EB%AA%A8%EB%A6%AC%20%EC%98%A4%EA%B0%80%EC%9D%B4(%EB%AC%B8%ED%98%B8%20%EC%8A%A4%ED%8A%B8%EB%A0%88%EC%9D%B4%EB%8F%85%EC%8A%A4)',
+        ozaki: 'https://namu.wiki/w/%EC%98%A4%EC%9E%90%ED%82%A4%20%EC%BD%94%EC%9A%94(%EB%AC%B8%ED%98%B8%20%EC%8A%A4%ED%8A%B8%EB%A0%88%EC%9D%B4%EB%8F%85%EC%8A%A4)',
+        chuuya: 'https://namu.wiki/w/%EB%82%98%EC%B9%B4%ED%95%98%EB%9D%BC%20%EC%B8%84%EC%95%BC(%EB%AC%B8%ED%98%B8%20%EC%8A%A4%ED%8A%B8%EB%A0%88%EC%9D%B4%EB%8F%85%EC%8A%A4)',
+        verlaine: 'https://namu.wiki/w/%ED%8F%AC%ED%8A%B8%20%EB%A7%88%ED%94%BC%EC%95%84#%ED%8F%B4%20%EB%B2%A0%EB%A5%BC%EB%A0%8C',
+        flags: 'https://namu.wiki/w/%ED%8F%AC%ED%8A%B8%20%EB%A7%88%ED%94%BC%EC%95%84#s-5.7',
+        dazai: 'https://namu.wiki/w/%EB%8B%A4%EC%9E%90%EC%9D%B4%20%EC%98%A4%EC%82%AC%EB%AC%B4(%EB%AC%B8%ED%98%B8%20%EC%8A%A4%ED%8A%B8%EB%A0%88%EC%9D%B4%EB%8F%85%EC%8A%A4)'
+    };
     const hidden = GENRE_HIDDEN;
     const full = genreFull;
 
@@ -1381,18 +1397,18 @@ function bungoPortMafiaTable() {
         full(head('포트 마피아의 멤버'), GENRE_BLACK),
         full(fold(1, '[ 펼치기 · 접기 ]'), GENRE_LIGHT),
         full(head('<ruby>수령<rt>보스</rt></ruby>'), GENRE_DARK),
-        full(names([underline('모리 오가이'), '<span style="font-size: 12px;">엘리스</span>']), GENRE_LIGHT),
+        full(names([linked(links.mori, underline('모리 오가이')), '<span style="font-size: 12px;">엘리스</span>']), GENRE_LIGHT),
         full(head('5대 간부'), GENRE_DARK),
-        full(names([underline('오자키 코요'), '(공석)', underline('나카하라 츄야'), '<ruby>A<rt>에이스</rt></ruby>', '폴 베를렌']), GENRE_LIGHT),
+        full(names([linked(links.ozaki, underline('오자키 코요')), '(공석)', linked(links.chuuya, underline('나카하라 츄야')), '<ruby>A<rt>에이스</rt></ruby>', linked(links.verlaine, '폴 베를렌')]), GENRE_LIGHT),
         full(head('준간부'), GENRE_DARK),
         full(names(['란도']), GENRE_LIGHT),
         full(head('구성원'), GENRE_DARK),
         full(names(['아쿠타가와 류노스케', '히구치 이치요', '카지이 모토지로', '유메노 큐사쿠', '오다 사쿠노스케']), GENRE_LIGHT),
         full(head('산하 조직'), GENRE_DARK),
-        [genreCell(head('검은 도마뱀'), GENRE_DARK, { colspan: 2 }), hidden, genreCell(head('플래그스'), GENRE_DARK, { rowspan: 2 })],
+        [genreCell(head('검은 도마뱀'), GENRE_DARK, { colspan: 2 }), hidden, genreCell(head(linked(links.flags, '플래그스')), GENRE_DARK, { rowspan: 2 })],
         [genreCell(names(['히로츠 류로', '타치하라 미치조', '긴']), GENRE_LIGHT, { colspan: 2 }), hidden, hidden],
         full(fold(2, '【前 구성원】', '#ffffff'), GENRE_DARK),
-        [genreCell(head('간부'), GENRE_DARK), genreCell(names([underline('다자이 오사무')]), GENRE_LIGHT, { colspan: 2 }), hidden],
+        [genreCell(head('간부'), GENRE_DARK), genreCell(names([linked(links.dazai, underline('다자이 오사무'))]), GENRE_LIGHT, { colspan: 2 }), hidden],
         [genreCell(head('준간부'), GENRE_DARK), genreCell(names(['<b>타마유키 윤</b>']), GENRE_LIGHT, { colspan: 2 }), hidden],
         [genreCell(head('전속 정보원'), GENRE_DARK), genreCell(names(['사카구치 안고']), GENRE_LIGHT, { colspan: 2 }), hidden],
         [genreCell(head('암살자'), GENRE_DARK), genreCell(names(['이즈미 쿄카']), GENRE_LIGHT, { colspan: 2 }), hidden]
