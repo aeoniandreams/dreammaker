@@ -1595,6 +1595,17 @@ const GENRES = [
     { id: 'bungo', name: '문호 스트레이독스', build: bungoPortMafiaTable },
     { id: 'mystic', name: '수상한 메신저', build: mysticMessengerTable },
     {
+        id: 'haikyu', name: '하이큐', build: haikyuKarasunoTable,
+        css: `
+@media (max-width: 767px) {
+    .wiki-genre-table[data-genre="haikyu"] .wiki-fold-table td {
+        font-size: 11px;
+        padding: 4px 2px !important;
+    }
+}
+`
+    },
+    {
         id: 'afterlife', name: '애프터라이프', build: afterlifeTables, titles: ['로고 표', '사신지부 표'],
         // 이미지가 칸 가장자리까지 차도록 칸 안쪽 여백(6px 10px)을 폰에서도 그대로 둔다.
         css: `
@@ -1605,17 +1616,6 @@ const GENRES = [
 
     .wiki-genre-table[data-genre="afterlife"] td.wiki-fold-cell {
         padding: 0 !important;
-    }
-}
-`
-    },
-    {
-        id: 'haikyu', name: '하이큐', build: haikyuKarasunoTable,
-        css: `
-@media (max-width: 767px) {
-    .wiki-genre-table[data-genre="haikyu"] .wiki-fold-table td {
-        font-size: 11px;
-        padding: 4px 2px !important;
     }
 }
 `
@@ -1681,6 +1681,114 @@ function renderGenreOptions() {
         o.textContent = g.name;
         select.appendChild(o);
     });
+    setupGenreDropdown();
+    syncGenreDropdown();
+}
+
+// ── 장르 드롭다운 ──────────────────────────────
+// 진짜 값은 숨겨 둔 <select id="genreSelect">가 들고 있고(저장·불러오기 코드가 그대로 쓴다),
+// 보이는 드롭다운(버튼 + 목록)은 select의 옵션을 따라 그려지고 고른 값을 select에 돌려준다.
+let genreDropdownBuilt = false;
+
+function setupGenreDropdown() {
+    const select = document.getElementById('genreSelect');
+    if (!select || genreDropdownBuilt) return;
+    genreDropdownBuilt = true;
+    select.classList.add('genre-native');
+    select.tabIndex = -1;
+    select.setAttribute('aria-hidden', 'true');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'genre-dropdown';
+    wrap.id = 'genreDropdown';
+    wrap.innerHTML = '<button type="button" class="genre-dd-btn" id="genreButton" aria-haspopup="listbox" aria-expanded="false">'
+        + '<span class="genre-dd-label"></span><i class="fa-solid fa-chevron-down genre-dd-chevron" aria-hidden="true"></i></button>'
+        + '<ul class="genre-dd-list" role="listbox" tabindex="-1" aria-labelledby="genreButton"></ul>';
+    select.insertAdjacentElement('afterend', wrap);
+    const card = select.closest('.section-block');
+    if (card) card.classList.add('has-dropdown');
+    const label = document.querySelector('label[for="genreSelect"]');
+    if (label) label.setAttribute('for', 'genreButton');
+
+    const btn = wrap.querySelector('.genre-dd-btn');
+    const list = wrap.querySelector('.genre-dd-list');
+    let active = -1;
+
+    const items = () => Array.from(list.querySelectorAll('.genre-dd-opt'));
+    const setActive = i => {
+        const els = items();
+        if (!els.length) return;
+        active = Math.max(0, Math.min(els.length - 1, i));
+        els.forEach((el, k) => el.classList.toggle('is-active', k === active));
+        els[active].scrollIntoView({ block: 'nearest' });
+    };
+    const open = () => {
+        if (wrap.classList.contains('open')) return;
+        syncGenreDropdown();
+        wrap.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+        setActive(items().findIndex(el => el.getAttribute('aria-selected') === 'true'));
+    };
+    const close = () => {
+        wrap.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        items().forEach(el => el.classList.remove('is-active'));
+    };
+    const choose = value => {
+        close();
+        if (select.value !== value) {
+            select.value = value;
+            onGenreChange();
+        }
+        syncGenreDropdown();
+    };
+
+    btn.addEventListener('click', () => (wrap.classList.contains('open') ? close() : open()));
+    list.addEventListener('click', e => {
+        const el = e.target.closest('.genre-dd-opt');
+        if (el) { choose(el.dataset.value); btn.focus(); }
+    });
+    list.addEventListener('mousemove', e => {
+        const el = e.target.closest('.genre-dd-opt');
+        if (el) setActive(items().indexOf(el));
+    });
+    document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+    wrap.addEventListener('keydown', e => {
+        const isOpen = wrap.classList.contains('open');
+        if (e.key === 'Escape') { if (isOpen) { e.preventDefault(); close(); btn.focus(); } return; }
+        if (e.key === 'Tab') { close(); return; }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!isOpen) { open(); return; }
+            setActive(active + (e.key === 'ArrowDown' ? 1 : -1));
+        } else if (e.key === 'Home' || e.key === 'End') {
+            if (!isOpen) return;
+            e.preventDefault();
+            setActive(e.key === 'Home' ? 0 : items().length - 1);
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (!isOpen) { open(); return; }
+            const el = items()[active];
+            if (el) { choose(el.dataset.value); btn.focus(); }
+        }
+    });
+}
+
+// select의 지금 옵션·선택값을 드롭다운에 맞춘다(옵션이 바뀌거나 값이 코드로 바뀐 뒤에 부른다).
+function syncGenreDropdown() {
+    const select = document.getElementById('genreSelect');
+    const wrap = document.getElementById('genreDropdown');
+    if (!select || !wrap) return;
+    const list = wrap.querySelector('.genre-dd-list');
+    const options = Array.from(select.options);
+    list.innerHTML = options.map(o => {
+        const selected = o.value === select.value;
+        return `<li class="genre-dd-opt${o.value === '' ? ' is-none' : ''}${selected ? ' is-selected' : ''}" role="option" data-value="${o.value}" aria-selected="${selected}">`
+            + `<span>${o.textContent}</span><i class="fa-solid fa-check genre-dd-check" aria-hidden="true"></i></li>`;
+    }).join('');
+    const current = options.find(o => o.value === select.value) || options[0];
+    wrap.querySelector('.genre-dd-label').textContent = current ? current.textContent : '';
+    wrap.classList.toggle('has-value', !!select.value);
 }
 
 function currentGenreId() {
@@ -1706,6 +1814,7 @@ function buildGenreEditor(genreData) {
         delete host.dataset.genre;
         area.hidden = true;
         select.value = '';
+        syncGenreDropdown();
         return;
     }
     let id = genreData.id || '';
@@ -1733,6 +1842,7 @@ function buildGenreEditor(genreData) {
     host.dataset.genre = id;
     area.hidden = false;
     select.value = id;
+    syncGenreDropdown();
 }
 
 function onGenreChange() {
@@ -1742,6 +1852,7 @@ function onGenreChange() {
     if (id === current) return;
     if (current && !confirm('지금 장르 표의 내용이 모두 새 선택으로 바뀝니다. 계속할까요?')) {
         select.value = current;
+        syncGenreDropdown();
         return;
     }
     const genre = GENRES.find(g => g.id === id);

@@ -308,6 +308,144 @@ input:not([type="color"]):not([type="checkbox"]):not([type="file"]):focus {
 
 input::placeholder { color: var(--text-3); }
 
+/* ── 장르 드롭다운 ───────────────────────────── */
+/* 진짜 값은 숨겨 둔 select가 들고 있고, 이 드롭다운은 그 값을 보여 주고 바꾼다. */
+select.genre-native { display: none !important; }
+
+/* 목록이 카드 밖으로 펼쳐지도록 이 카드만 잘라내지 않고, 아래 카드들보다 위에 둔다 */
+.section-block.has-dropdown {
+  overflow: visible;
+  position: relative;
+  z-index: 5;
+}
+
+.genre-dropdown {
+  position: relative;
+}
+
+.genre-dd-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-3);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.genre-dropdown.has-value .genre-dd-btn {
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.genre-dd-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-dim);
+}
+
+.genre-dd-btn:focus-visible,
+.genre-dropdown.open .genre-dd-btn {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+.genre-dd-chevron {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--primary);
+  transition: transform 0.2s ease;
+}
+
+.genre-dropdown.open .genre-dd-chevron {
+  transform: rotate(180deg);
+}
+
+.genre-dd-list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: min(380px, 60vh);
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
+}
+
+.genre-dropdown.open .genre-dd-list {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.genre-dd-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  color: var(--text-1);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.genre-dd-opt + .genre-dd-opt {
+  margin-top: 2px;
+}
+
+.genre-dd-opt.is-none {
+  color: var(--text-3);
+  margin-bottom: 4px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.genre-dd-opt.is-none + .genre-dd-opt {
+  margin-top: 0;
+}
+
+.genre-dd-opt.is-active {
+  background: var(--primary-dim);
+}
+
+.genre-dd-opt.is-selected {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.genre-dd-check {
+  font-size: 0.75rem;
+  color: var(--primary);
+  visibility: hidden;
+}
+
+.genre-dd-opt.is-selected .genre-dd-check {
+  visibility: visible;
+}
+
 /* ── Color Picker ──────────────────────────── */
 .color-picker-wrapper {
   display: flex;
