@@ -1516,7 +1516,9 @@ const ARCANA_IMG = {
     vega: 'https://i.namu.wiki/i/PUacVZyJIb0dLU6dXsrMJ3XklRI0UF9hKcqyOUt98Go7j-fmkPM96LjICPK1nhy-n_-mK9NEe96g-f-7iGUCxilipTZjOYkRumQb2qSYJxf5Fzlu2yrizvQ3ruLP9zQTxZuCVEXvnpt6fvUBiJ07aA.webp',
     alphard: 'https://i.namu.wiki/i/U0RP7MD255qphd4J0RUXL3yGVlYfUpJkCU0j8VGpQO-4tWO32snNG3NCyvewcViYSkF40FViBhXcCBl-M8GkJ4FGNwtzncgrSIazxmBQgENWtnZGjhR_PtfAoNcIDZTdX1ETL7OYUXbamipxZPN9QQ.webp',
     pollux: 'https://i.namu.wiki/i/GhsgYHtA_yt1prQhHDN-B-BpcqLMtImaBynW04Xn-BhK1-rJCxgLxLC8zX-uIclEFtb2s1MD9DO_7yiXfth7OgfZW9ymiy_0o6RhWRktKW6diDjlC7xWloM3RC2WqD36wpeO1lwmhgM9Q_ZWCv9FeQ.webp',
-    sirius: 'https://i.namu.wiki/i/DNof7T7oBoZh7kMp9iTMD7M16PALJ9iX7letYogl-EFHrVidBtYFUtggVQa5B_oXmj0iSmXlvNbwigK2RIeEXTyo-PtvoGd5tBRKsCwA5PIpZeA7h9inrr0q4thhxvXbJw_O8kGt3zXtrTXnj2pzBQ.webp'
+    sirius: 'https://i.namu.wiki/i/DNof7T7oBoZh7kMp9iTMD7M16PALJ9iX7letYogl-EFHrVidBtYFUtggVQa5B_oXmj0iSmXlvNbwigK2RIeEXTyo-PtvoGd5tBRKsCwA5PIpZeA7h9inrr0q4thhxvXbJw_O8kGt3zXtrTXnj2pzBQ.webp',
+    // 르네 이미지는 이 저장소(images/arcana-rene.png)에 두고 GitHub Pages 주소로 불러온다.
+    rene: 'https://aeoniandreams.github.io/dreammaker/images/arcana-rene.png'
 };
 
 function arcanaTwilightTable() {
@@ -1531,7 +1533,7 @@ function arcanaTwilightTable() {
     const summoner = genreCell(genreCenter('<b>소환사</b>', white), '#9397FF');
     const rene = genreCell(
         `<div style="text-align: center; color: ${GENRE_BLACK}; font-size: 11px; line-height: 1.5;">`
-        + `<div style="width: 50px; max-width: 100%; height: 50px; margin: 0 auto 2px;"></div><b>르네</b></div>`, white);
+        + `<img src="${ARCANA_IMG.rene}" referrerpolicy="no-referrer" style="display: block; width: 50px; max-width: 100%; height: auto; margin: 0 auto 2px;"><b>르네</b></div>`, white);
     const rows = [
         [genreCell(header, white, { colspan: 6 }), ...Array(5).fill(GENRE_HIDDEN), summoner],
         [
